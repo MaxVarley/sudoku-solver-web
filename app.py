@@ -13,7 +13,7 @@ from solver import solve_sudoku
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'sessions'
-MAX_IMAGE_SIZE_MB = 3
+MAX_IMAGE_SIZE_MB = 10
 
 @app.route('/upload', methods=['POST'])
 def upload():
