@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sudoku Solver</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1.5rem;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    #upload-section {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    input[type="file"] {
+      margin: 0.5rem 0;
+    }
+
+    #uploaded-preview {
+      display: block;
+      max-width: 100%;
+      margin: 1rem auto;
+      border: 2px dashed #aaa;
+      padding: 0.5rem;
+    }
+
+    #output {
+      font-weight: bold;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .grid-title {
+      text-align: center;
+      font-weight: bold;
+      margin: 1rem 0 0.5rem;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: auto;
+    }
+
+    td {
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      font-size: 18px;
+      border: 1px solid #888;
+    }
+
+    td:nth-child(3n) {
+      border-right: 2px solid black;
+    }
+
+    tr:nth-child(3n) td {
+      border-bottom: 2px solid black;
+    }
+
+    td:first-child {
+      border-left: 2px solid black;
+    }
+
+    tr:first-child td {
+      border-top: 2px solid black;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sudoku Solver</h1>
+
+  <div id="upload-section">
+    <input type="file" id="upload" accept="image/*">
+    <br>
+    <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;">
+    <br>
+    <button id="submit-btn">Submit</button>
+  </div>
+
+  <div id="output"></div>
+
+  <div class="grid-title">OCR Input</div>
+  <table id="input-board"></table>
+
+  <div class="grid-title" id="solved-label" style="display:none;">Solved Board</div>
+  <table id="solved-board"></table>
+
+  <div class="grid-title">Detected Sudoku Grid (Warped)</div>
+  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="max-width: 100%; border: 1px solid #ccc;">
+
+  <script>
+    const fileInput = document.getElementById("upload");
+    const outputDiv = document.getElementById("output");
+    const warpedPreview = document.getElementById("warped-preview");
+    const uploadedPreview = document.getElementById("uploaded-preview");
+    const solvedLabel = document.getElementById("solved-label");
+  
+    let sessionId = localStorage.getItem("sudoku_session_id") || null;
+  
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          uploadedPreview.src = e.target.result;
+          uploadedPreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  
+    function renderBoard(data, tableId) {
+      const table = document.getElementById(tableId);
+      table.innerHTML = '';
+      for (let row = 0; row < 9; row++) {
+        const tr = document.createElement('tr');
+        for (let col = 0; col < 9; col++) {
+          const td = document.createElement('td');
+          td.textContent = data[row][col] === 0 ? '' : data[row][col];
+          tr.appendChild(td);
+        }
+        table.appendChild(tr);
+      }
+    }
+  
+    document.getElementById("submit-btn").addEventListener("click", async () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select an image file.");
+        return;
+      }
+  
+      const formData = new FormData();
+      formData.append("image", file);
+      if (sessionId) {
+        formData.append("session_id", sessionId);
+      }
+  
+      try {
+        const response = await fetch("/upload", {
+          method: "POST",
+          body: formData,
+        });
+  
+        const result = await response.json();
+  
+        if (!sessionId && result.session_id) {
+          sessionId = result.session_id;
+          localStorage.setItem("sudoku_session_id", sessionId);
+        }
+  
+        if (result.input) {
+          renderBoard(result.input, 'input-board');
+          outputDiv.innerText = "Sudoku Found";
+        } else {
+          outputDiv.innerText = "Sudoku Not Found";
+        }
+  
+        if (result.warped_url) {
+          warpedPreview.src = result.warped_url + "?" + Date.now();
+        }
+  
+        if (result.success && result.solved) {
+          renderBoard(result.solved, 'solved-board');
+          solvedLabel.style.display = "block";
+          outputDiv.innerText += "\nSudoku Solved";
+        } else {
+          solvedLabel.style.display = "none";
+          outputDiv.innerText += "\nSudoku Not Solved";
+        }
+  
+      } catch (err) {
+        console.error(err);
+        outputDiv.textContent = "Error processing image.";
+      }
+    });
+  </script>
+  
+</body>
+</html>
