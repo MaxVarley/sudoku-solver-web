@@ -22,8 +22,9 @@
       margin-bottom: 1rem;
     }
 
-    input[type="file"] {
-      margin: 0.5rem 0;
+    #submit-btn {
+      margin-top: 1rem;
+      display: none;
     }
 
     #uploaded-preview {
@@ -93,15 +94,6 @@
     .hidden {
       display: none;
     }
-
-    #submit-btn {
-      margin-top: 1rem;
-    }
-
-    #restart-section {
-      text-align: center;
-      margin-top: 2rem;
-    }
   </style>
 </head>
 <body>
@@ -113,12 +105,12 @@
     <button id="submit-btn">Submit</button>
   </div>
 
-  <div id="output" class="hidden"></div>
+  <div id="output"></div>
 
   <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid (Warped)</div>
   <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="max-width: 100%; border: 1px solid #ccc; display: none;">
 
-  <div id="grid-confirm-section" class="button-group hidden">
+  <div id="grid-confirm-section" class="button-group" style="display:none;">
     <p>Is this the correct grid?</p>
     <button id="confirm-grid">Yes</button>
     <button id="manual-from-confirm">Manually Set Corners</button>
@@ -137,22 +129,17 @@
   <button id="manual-corner-btn" style="display:none;">Enter Corners Manually</button>
 
   <div class="grid-title" id="ocr-label" style="display:none;">OCR Input</div>
-  <div id="ocr-message" class="grid-title hidden">Please confirm the OCR result:</div>
   <table id="input-board"></table>
 
-  <div id="ocr-confirm-section" class="button-group hidden">
+  <div id="ocr-confirm-section" class="button-group" style="display:none;">
+    <p>Is this the correct OCR result?</p>
     <button id="confirm-ocr">Yes</button>
     <button id="manual-input-btn">Enter Numbers Manually</button>
     <button id="retry-ocr">Upload New Image</button>
   </div>
 
-  <div class="grid-title hidden" id="solving-label">Solving visually...</div>
-  <div class="grid-title hidden" id="solved-label">Solved Board</div>
-  <table id="solved-board"></table>
-
-  <div id="restart-section" class="hidden">
-    <button onclick="location.reload()">Start Over</button>
-  </div>
+  <div class="grid-title" id="solved-label" style="display:none;">Solved Board</div>
+  <table id="solved-board" style="display:none;"></table>
 
   <script src="script.js"></script>
 </body>

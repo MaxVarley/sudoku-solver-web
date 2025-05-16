@@ -8,55 +8,52 @@ const AppState = {
 let currentStep = AppState.IMAGE_UPLOAD;
 let uploadedImage = null;
 let inputGrid = null;
+let sessionId = localStorage.getItem("sudoku_session_id") || null;
 
 const fileInput = document.getElementById("upload");
 const submitBtn = document.getElementById("submit-btn");
 const outputDiv = document.getElementById("output");
+
+const warpedLabel = document.getElementById("warped-label");
 const warpedPreview = document.getElementById("warped-preview");
 const uploadedPreview = document.getElementById("uploaded-preview");
 const solvedLabel = document.getElementById("solved-label");
+const solvedBoard = document.getElementById("solved-board");
+const inputBoard = document.getElementById("input-board");
+const ocrLabel = document.getElementById("ocr-label");
+
 const confirmGridBtn = document.getElementById("confirm-grid");
 const retryGridBtn = document.getElementById("retry-grid");
 const confirmOCRBtn = document.getElementById("confirm-ocr");
 const retryOCRBtn = document.getElementById("retry-ocr");
 const manualCornerBtn = document.getElementById("manual-corner-btn");
+const manualFromConfirmBtn = document.getElementById("manual-from-confirm");
+const manualInputBtn = document.getElementById("manual-input-btn");
+
+const gridConfirmSection = document.getElementById("grid-confirm-section");
+const ocrConfirmSection = document.getElementById("ocr-confirm-section");
+
 const canvas = document.getElementById("corner-canvas");
 const ctx = canvas.getContext("2d");
 const resetCornersBtn = document.getElementById("reset-corners");
 const submitCornersBtn = document.getElementById("submit-corners");
-const manualFromConfirmBtn = document.getElementById("manual-from-confirm");
-const manualInputBtn = document.getElementById("manual-input-btn");
+
+const startOverBtn = document.createElement("button");
+startOverBtn.innerText = "Start Over";
+startOverBtn.style.display = "none";
+startOverBtn.style.margin = "1rem auto";
+startOverBtn.style.display = "block";
+startOverBtn.onclick = () => location.reload();
+document.body.appendChild(startOverBtn);
 
 let cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
 let draggingIndex = null;
-let sessionId = localStorage.getItem("sudoku_session_id") || null;
-
-document.getElementById("input-board").style.display = "none";
-solvedLabel.style.display = "none";
-document.getElementById("solved-board").style.display = "none";
-manualCornerBtn.style.display = "none";
-submitBtn.style.display = "none";
-
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0];
-  if (file) {
-    uploadedImage = file;
-    const reader = new FileReader();
-    reader.onload = e => {
-      uploadedPreview.src = e.target.result;
-      uploadedPreview.style.display = "block";
-      submitBtn.style.display = "inline-block";
-      fileInput.style.display = "none";
-    };
-    reader.readAsDataURL(file);
-    outputDiv.innerText = "Image loaded. Click Submit to proceed.";
-    currentStep = AppState.IMAGE_UPLOAD;
-  }
-});
+let uploadedCanvasImage = new Image();
 
 function renderBoard(data, tableId, editable = false) {
   const table = document.getElementById(tableId);
   table.innerHTML = '';
+
   for (let row = 0; row < 9; row++) {
     const tr = document.createElement('tr');
     for (let col = 0; col < 9; col++) {
@@ -66,16 +63,9 @@ function renderBoard(data, tableId, editable = false) {
         input.type = 'text';
         input.maxLength = 1;
         input.value = data[row][col] === 0 ? '' : data[row][col];
-        input.style.width = '28px';
-        input.style.height = '28px';
-        input.style.textAlign = 'center';
-        input.style.border = 'none';
-        input.style.fontSize = '18px';
         input.addEventListener('input', () => {
           const val = input.value.trim();
-          if (!/^[1-9]?$/.test(val)) {
-            input.value = '';
-          }
+          input.value = /^[1-9]$/.test(val) ? val : '';
           data[row][col] = val === '' ? 0 : parseInt(val);
         });
         td.appendChild(input);
@@ -88,17 +78,43 @@ function renderBoard(data, tableId, editable = false) {
   }
 }
 
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (file) {
+    uploadedImage = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      uploadedPreview.src = e.target.result;
+      uploadedPreview.style.display = "block";
+      submitBtn.style.display = "block";
+      fileInput.style.display = "none";
+    };
+    reader.readAsDataURL(file);
+    outputDiv.innerText = "Image loaded. Click Submit to proceed.";
+    resetAll();
+  }
+});
+
+function resetAll() {
+  gridConfirmSection.style.display = "none";
+  ocrConfirmSection.style.display = "none";
+  inputBoard.style.display = "none";
+  ocrLabel.style.display = "none";
+  solvedBoard.style.display = "none";
+  solvedLabel.style.display = "none";
+  warpedPreview.style.display = "none";
+  warpedLabel.style.display = "none";
+  manualCornerBtn.style.display = "none";
+  document.getElementById("manual-corner-section").style.display = "none";
+  startOverBtn.style.display = "none";
+}
+
 submitBtn.addEventListener("click", async () => {
+  if (!uploadedImage) return alert("Please upload an image first.");
   switch (currentStep) {
-    case AppState.IMAGE_UPLOAD:
-      await handleGridDetection();
-      break;
-    case AppState.GRID_CONFIRM:
-      await handleOCRConfirmation();
-      break;
-    case AppState.OCR_CONFIRM:
-      await handleSolveVisual(inputGrid);
-      break;
+    case AppState.IMAGE_UPLOAD: await handleGridDetection(); break;
+    case AppState.GRID_CONFIRM: await handleOCRConfirmation(); break;
+    case AppState.OCR_CONFIRM: await handleSolveVisual(inputGrid); break;
   }
 });
 
@@ -107,97 +123,85 @@ async function handleGridDetection() {
   formData.append("image", uploadedImage);
 
   try {
-    const uploadResponse = await fetch("/upload", { method: "POST", body: formData });
-    const uploadResult = await uploadResponse.json();
+    const uploadRes = await fetch("/upload", { method: "POST", body: formData });
+    const uploadResult = await uploadRes.json();
+
     sessionId = uploadResult.session_id;
     localStorage.setItem("sudoku_session_id", sessionId);
 
-    const gridFormData = new FormData();
-    gridFormData.append("session_id", sessionId);
-    const detectResponse = await fetch("/detect_grid", { method: "POST", body: gridFormData });
-    const detectResult = await detectResponse.json();
+    const gridForm = new FormData();
+    gridForm.append("session_id", sessionId);
 
-    if (detectResult.warped_url && detectResult.corners) {
+    const detectRes = await fetch("/detect_grid", { method: "POST", body: gridForm });
+    const detectResult = await detectRes.json();
+
+    if (detectResult.warped_url) {
       warpedPreview.src = detectResult.warped_url + "?" + Date.now();
       warpedPreview.style.display = "block";
-      document.getElementById("grid-confirm-section").style.display = "block";
+      warpedLabel.style.display = "block";
+      gridConfirmSection.style.display = "block";
       outputDiv.innerText = "";
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Grid not found. Try again or enter corners manually.";
-      manualCornerBtn.style.display = "block";
+      manualCornerBtn.style.display = "inline-block";
     }
   } catch (err) {
-    console.error(err);
     outputDiv.innerText = "Error during grid detection.";
   }
 }
 
 confirmGridBtn.addEventListener("click", async () => {
-  document.getElementById("grid-confirm-section").style.display = "none";
+  gridConfirmSection.style.display = "none";
   outputDiv.innerText = "Reading digits...";
+
   const formData = new FormData();
   formData.append("session_id", sessionId);
 
   try {
-    const ocrResponse = await fetch("/ocr", { method: "POST", body: formData });
-    const result = await ocrResponse.json();
+    const ocrRes = await fetch("/ocr", { method: "POST", body: formData });
+    const result = await ocrRes.json();
 
     if (result.input) {
       inputGrid = result.input;
       renderBoard(inputGrid, "input-board", true);
-      document.getElementById("input-board").style.display = "table";
-      document.getElementById("ocr-confirm-section").style.display = "block";
+      inputBoard.style.display = "table";
+      ocrLabel.style.display = "block";
+      ocrConfirmSection.style.display = "block";
       outputDiv.innerText = "Please confirm the OCR result.";
       currentStep = AppState.OCR_CONFIRM;
     } else {
-      outputDiv.innerText = "OCR failed. Please try a new image.";
+      outputDiv.innerText = "OCR failed.";
     }
   } catch (err) {
-    console.error(err);
     outputDiv.innerText = "Error during OCR.";
   }
 });
 
-manualInputBtn.addEventListener("click", () => {
-  renderBoard(inputGrid, 'input-board', true);
-  outputDiv.innerText = "Edit the grid manually, then press Solve.";
-});
-
 confirmOCRBtn.addEventListener("click", () => {
-  document.getElementById("ocr-confirm-section").style.display = "none";
-  document.getElementById("input-board").style.display = "none";
+  ocrConfirmSection.style.display = "none";
+  inputBoard.style.display = "none";
   outputDiv.innerText = "Solving visually...";
   currentStep = AppState.VISUAL_SOLVE;
   handleSolveVisual(inputGrid);
 });
 
-retryGridBtn.addEventListener("click", resetToUpload);
-retryOCRBtn.addEventListener("click", resetToUpload);
+retryGridBtn.addEventListener("click", resetAll);
+retryOCRBtn.addEventListener("click", resetAll);
 
-function resetToUpload() {
-  document.getElementById("grid-confirm-section").style.display = "none";
-  document.getElementById("ocr-confirm-section").style.display = "none";
-  document.getElementById("input-board").style.display = "none";
-  document.getElementById("solved-board").style.display = "none";
-  document.getElementById("solved-label").style.display = "none";
-  fileInput.style.display = "inline";
-  submitBtn.style.display = "none";
-  warpedPreview.style.display = "none";
-  uploadedPreview.style.display = "none";
-  outputDiv.innerText = "Please upload a new image.";
-  currentStep = AppState.IMAGE_UPLOAD;
-}
+manualInputBtn.addEventListener("click", () => {
+  renderBoard(inputGrid, "input-board", true);
+  outputDiv.innerText = "Edit the grid manually, then press Solve.";
+});
 
 async function handleSolveVisual(grid) {
-  const response = await fetch("/solve", {
+  const res = await fetch("/solve", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ grid })
   });
 
-  const result = await response.json();
-
+  const result = await res.json();
   if (!result.success || !result.finalBoard) {
     outputDiv.innerText = "Could not solve this puzzle.";
     return;
@@ -205,85 +209,49 @@ async function handleSolveVisual(grid) {
 
   const finalBoard = result.finalBoard;
   const board = grid.map(row => [...row]);
+  solvedLabel.style.display = "block";
+  solvedBoard.style.display = "table";
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
-  const ANIMATION_DELAY = 50;
-
-  document.getElementById("solved-board").style.display = "table";
-  solvedLabel.style.display = "block";
-
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
       if (board[row][col] === 0) {
         board[row][col] = finalBoard[row][col];
         renderBoard(board, 'solved-board');
-        await delay(ANIMATION_DELAY);
+        await delay(50);
       }
     }
   }
 
-  outputDiv.innerText = "Sudoku Solved!\nClick below to solve another.";
-  const againBtn = document.createElement("button");
-  againBtn.textContent = "Start Over";
-  againBtn.onclick = resetToUpload;
-  outputDiv.appendChild(document.createElement("br"));
-  outputDiv.appendChild(againBtn);
+  outputDiv.innerText = "Sudoku Solved!";
+  startOverBtn.style.display = "block";
 }
 
-// Manual corner setup
+
+// Manual Corners
 manualCornerBtn.addEventListener("click", () => {
-  manualCornerBtn.style.display = "none";
   document.getElementById("manual-corner-section").style.display = "block";
   drawImageOnCanvas();
 });
 
-resetCornersBtn.addEventListener("click", () => {
-  cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
-  drawCanvas();
+manualFromConfirmBtn.addEventListener("click", () => {
+  gridConfirmSection.style.display = "none";
+  document.getElementById("manual-corner-section").style.display = "block";
+  drawImageOnCanvas();
 });
-
-submitCornersBtn.addEventListener("click", async () => {
-  const scaledCorners = cornerPoints.map(([x, y]) => {
-    const scaleX = uploadedCanvasImage.naturalWidth / canvas.width;
-    const scaleY = uploadedCanvasImage.naturalHeight / canvas.height;
-    return [x * scaleX, y * scaleY];
-  });
-
-  const formData = new FormData();
-  formData.append("session_id", sessionId);
-  formData.append("corners", JSON.stringify(scaledCorners));
-
-  try {
-    const response = await fetch("/manual_warp", { method: "POST", body: formData });
-    const result = await response.json();
-
-    if (result.warped_url) {
-      warpedPreview.src = result.warped_url + "?" + Date.now();
-      warpedPreview.style.display = "block";
-      document.getElementById("grid-confirm-section").style.display = "block";
-      document.getElementById("manual-corner-section").style.display = "none";
-      outputDiv.innerText = "Warp successful. Please confirm.";
-      currentStep = AppState.GRID_CONFIRM;
-    } else {
-      outputDiv.innerText = "Manual warp failed.";
-    }
-  } catch (err) {
-    console.error(err);
-    outputDiv.innerText = "Error sending manual corners.";
-  }
-});
-
-const uploadedCanvasImage = new Image();
-uploadedCanvasImage.onload = () => drawCanvas();
 
 function drawImageOnCanvas() {
+  uploadedCanvasImage.onload = drawCanvas;
   uploadedCanvasImage.src = uploadedPreview.src;
 }
 
 function drawCanvas() {
+  canvas.width = uploadedCanvasImage.width;
+  canvas.height = uploadedCanvasImage.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(uploadedCanvasImage, 0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = 'red';
+  ctx.drawImage(uploadedCanvasImage, 0, 0);
+
+  ctx.strokeStyle = "red";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(...cornerPoints[0]);
@@ -303,11 +271,10 @@ function drawCanvas() {
 
 canvas.addEventListener("mousedown", e => {
   const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
   for (let i = 0; i < 4; i++) {
     const [cx, cy] = cornerPoints[i];
-    if (Math.hypot(cx - x, cy - y) < 16) {
+    if (Math.hypot(cx - x, cy - y) < 12) {
       draggingIndex = i;
       return;
     }
@@ -323,3 +290,38 @@ canvas.addEventListener("mousemove", e => {
 
 canvas.addEventListener("mouseup", () => draggingIndex = null);
 canvas.addEventListener("mouseleave", () => draggingIndex = null);
+
+resetCornersBtn.addEventListener("click", () => {
+  cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
+  drawCanvas();
+});
+
+submitCornersBtn.addEventListener("click", async () => {
+  const scaled = cornerPoints.map(([x, y]) => {
+    const sx = uploadedCanvasImage.naturalWidth / canvas.width;
+    const sy = uploadedCanvasImage.naturalHeight / canvas.height;
+    return [x * sx, y * sy];
+  });
+
+  const formData = new FormData();
+  formData.append("session_id", sessionId);
+  formData.append("corners", JSON.stringify(scaled));
+
+  try {
+    const response = await fetch("/manual_warp", { method: "POST", body: formData });
+    const result = await response.json();
+    if (result.warped_url) {
+      warpedPreview.src = result.warped_url + "?" + Date.now();
+      warpedPreview.style.display = "block";
+      warpedLabel.style.display = "block";
+      gridConfirmSection.style.display = "block";
+      document.getElementById("manual-corner-section").style.display = "none";
+      outputDiv.innerText = "Warp successful. Please confirm.";
+      currentStep = AppState.GRID_CONFIRM;
+    } else {
+      outputDiv.innerText = "Manual warp failed.";
+    }
+  } catch (err) {
+    outputDiv.innerText = "Error sending manual corners.";
+  }
+});
