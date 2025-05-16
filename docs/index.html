@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Sudoku Solver</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Google Fonts -->
@@ -207,10 +208,34 @@
       margin-top: 2rem;
     }
 
+    #github-link {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: #24292e;
+      color: white;
+      padding: 8px 12px;
+      font-size: 14px;
+      text-decoration: none;
+      border-radius: 5px;
+      z-index: 1000;
+      transition: background-color 0.2s ease;
+    }
+
+    #github-link:hover {
+      background-color: #0366d6;
+    }
+
   </style>
 </head>
 
 <body>
+
+  <a id="github-link" href="https://github.com/MaxVarley/sudoku-solver-web" target="_blank">
+    View Code on GitHub
+  </a>
+
+
   <h1>Sudoku Solver</h1>
 
   <div id="upload-section" class="card fade-in">
