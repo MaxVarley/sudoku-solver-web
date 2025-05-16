@@ -6,7 +6,7 @@ A web-based Sudoku solver that uses image processing and OCR to detect and solve
 
 ## Browser Demo
 
-[Try it here on render ](https://sudoku-solver-web.onrender.com)  
+[Try it here on render ](https://sudoku-solver-web-gnjq.onrender.com/)  
 
 ---
 
