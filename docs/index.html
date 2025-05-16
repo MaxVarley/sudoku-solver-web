@@ -4,139 +4,192 @@
   <meta charset="UTF-8">
   <title>Sudoku Solver</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body {
-    font-family: sans-serif;
-    padding: 1.5rem;
-    max-width: 600px;
-    margin: auto;
-  }
 
-  h1 {
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-  #upload-section {
-    text-align: center;
-    margin-bottom: 1rem;
-  }
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      padding: 1.5rem;
+      max-width: 600px;
+      margin: auto;
+      background: linear-gradient(0deg, #f4f4f4 1px, transparent 1px),
+                  linear-gradient(90deg, #f4f4f4 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
 
-  #submit-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-  }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
 
-  #submit-btn {
-    display: none;
-  }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
 
-  #uploaded-preview {
-    display: block;
-    max-width: 100%;
-    margin: 1rem auto;
-    border: 2px dashed #aaa;
-    padding: 0.5rem;
-  }
+    .fade-in {
+      animation: fadeIn 0.4s ease;
+    }
 
-  #output {
-    font-weight: bold;
-    text-align: center;
-    margin: 1rem 0;
-    white-space: pre-line;
-  }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-  .grid-title {
-    text-align: center;
-    font-weight: bold;
-    margin: 1rem 0 0.5rem;
-  }
+    #upload-section {
+      text-align: center;
+    }
 
-  table {
-    border-collapse: collapse;
-    margin: auto;
-  }
+    #submit-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 1rem;
+    }
 
-  td {
-    width: 30px;
-    height: 30px;
-    text-align: center;
-    font-size: 18px;
-    border: 1px solid #888;
-  }
+    #submit-btn {
+      display: none;
+    }
 
-  td:nth-child(3n) {
-    border-right: 2px solid black;
-  }
+    #uploaded-preview {
+      display: block;
+      max-width: 100%;
+      margin: 1rem auto;
+      border: 2px dashed #aaa;
+      padding: 0.5rem;
+    }
 
-  tr:nth-child(3n) td {
-    border-bottom: 2px solid black;
-  }
+    #output {
+      font-weight: bold;
+      text-align: center;
+      margin: 1rem 0;
+      white-space: pre-line;
+    }
 
-  td:first-child {
-    border-left: 2px solid black;
-  }
+    .grid-title {
+      text-align: center;
+      font-weight: bold;
+      margin: 1rem 0 0.5rem;
+    }
 
-  tr:first-child td {
-    border-top: 2px solid black;
-  }
+    table {
+      border-collapse: collapse;
+      margin: auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
 
-  td:hover {
-    background-color: #f4f4f4;
-  }
+    td {
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      font-size: 18px;
+      border: 1px solid #ccc;
+      font-family: 'Share Tech Mono', monospace;
+      transition: background-color 0.2s ease;
+    }
 
-  td input {
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    border: none;
-    font-size: 18px;
-    font-family: inherit;
-    box-sizing: border-box;
-    transition: background-color 0.2s ease, outline 0.2s ease;
-  }
+    td:nth-child(3n) {
+      border-right: 2px solid black;
+    }
 
-  td input:focus {
-    outline: 2px solid #0077cc;
-    background-color: #eef;
-  }
+    tr:nth-child(3n) td {
+      border-bottom: 2px solid black;
+    }
 
-  .button-group {
-    text-align: center;
-    margin-top: 1rem;
-  }
+    td:first-child {
+      border-left: 2px solid black;
+    }
 
-  .button-group button {
-    margin: 0.5rem;
-  }
+    tr:first-child td {
+      border-top: 2px solid black;
+    }
 
-  .hidden {
-    display: none;
-  }
+    td:hover {
+      background-color: #f9f9f9;
+    }
 
-  img {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 100%;
-    height: auto;
-  }
+    td input {
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      border: none;
+      font-size: 18px;
+      font-family: 'Share Tech Mono', monospace;
+      box-sizing: border-box;
+      background: transparent;
+    }
 
-  #uploaded-preview,
-  #warped-preview {
-    max-width: 100%;
-    border: 2px dashed #aaa;
-    padding: 0.5rem;
-  }
+    td input:focus {
+      outline: 2px solid #0077cc;
+      background-color: #eef;
+    }
 
-</style>
+    .button-group {
+      text-align: center;
+      margin-top: 1rem;
+    }
 
+    .button-group button {
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      background: #0077cc;
+      color: white;
+      cursor: pointer;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .button-group button:hover {
+      box-shadow: 0 0 8px #0077cc88;
+      transform: translateY(-1px);
+    }
+
+    .highlight-fill {
+      background-color: #d0f0c0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    img {
+      display: block;
+      margin: auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    #uploaded-preview,
+    #warped-preview {
+      max-width: 100%;
+      border: 2px dashed #aaa;
+      padding: 0.5rem;
+    }
+
+    /* Progress bar style (optional enhancement for reading digits) */
+    #reading-msg {
+      text-align: center;
+      font-weight: bold;
+      color: #444;
+      font-size: 1rem;
+      animation: fadeIn 0.3s ease-in;
+    }
+  </style>
 </head>
+
 <body>
   <h1>Sudoku Solver</h1>
 
-  <div id="upload-section">
+  <div id="upload-section" class="card fade-in">
     <input type="file" id="upload" accept="image/*"><br>
     <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
     <div id="submit-container">
@@ -147,9 +200,9 @@
   <div id="output"></div>
 
   <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid (Warped)</div>
-  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="max-width: 100%; border: 1px solid #ccc; display: none;">
+  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="display: none;">
 
-  <div id="reading-msg" class="grid-title" style="display:none;">Reading digits...</div>
+  <div id="reading-msg" class="grid-title hidden">Reading digits...</div>
 
   <div id="ocr-prompt" class="grid-title" style="display:none;">Please confirm the OCR result:</div>
 
@@ -160,7 +213,7 @@
     <button id="retry-grid">Upload New Image</button>
   </div>
 
-  <div id="manual-corner-section" style="text-align:center; display:none;">
+  <div id="manual-corner-section" class="card" style="text-align:center; display:none;">
     <p>Adjust the red corners to outline the Sudoku grid:</p>
     <canvas id="corner-canvas" width="450" height="450" style="border: 1px solid #aaa; touch-action: none;"></canvas>
     <div style="margin-top: 1rem;">
