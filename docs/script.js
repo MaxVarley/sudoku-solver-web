@@ -199,7 +199,6 @@ confirmOCRBtn.addEventListener("click", () => {
   document.getElementById("ocr-prompt").style.display = "none";
   const readingEl = document.getElementById("reading-msg");
   if (readingEl) readingEl.remove();
-  outputDiv.innerText = "Solving visually...";
   currentStep = AppState.VISUAL_SOLVE;
   handleSolveVisual(inputGrid);
 });
@@ -230,6 +229,8 @@ async function handleSolveVisual(grid) {
   const board = grid.map(row => [...row]);
   solvedLabel.style.display = "block";
   solvedBoard.style.display = "table";
+
+  solvedBoard.scrollIntoView({ behavior: "smooth", block: "center" });
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
   for (let row = 0; row < 9; row++) {

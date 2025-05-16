@@ -38,6 +38,9 @@ def is_valid(board, row, col, num):
     return True
 
 def solve_sudoku(board):
+    if not is_board_valid(board):
+        return False  # Reject invalid puzzles immediately
+
     for row in range(9):
         for col in range(9):
             if board[row][col] == 0:
@@ -45,16 +48,20 @@ def solve_sudoku(board):
                     if is_valid(board, row, col, num):
                         board[row][col] = num
                         if solve_sudoku(board):
-                            return True 
+                            return True
                         board[row][col] = 0
                 return False
     return True
+
 
 def solve_and_record_steps(board):
     """
     Solves the board and records each placement and removal as a step.
     Each step is a dictionary: {'row': r, 'col': c, 'value': v}
     """
+    if not is_board_valid(board):
+        return False, [], board  # Reject early with empty steps
+    
     steps = []
 
     def backtrack():
