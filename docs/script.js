@@ -28,8 +28,14 @@ const manualFromConfirmBtn = document.getElementById("manual-from-confirm");
 const manualInputBtn = document.getElementById("manual-input-btn");
 
 let cornerPoints = [];
-
+let draggingIndex = null;
 let sessionId = localStorage.getItem("sudoku_session_id") || null;
+
+document.getElementById("input-board").style.display = "none";
+document.getElementById("solved-label").style.display = "none";
+document.getElementById("solved-board").style.display = "none";
+document.getElementById("manual-corner-btn").style.display = "none";
+submitBtn.style.display = "none";
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
@@ -39,6 +45,11 @@ fileInput.addEventListener("change", () => {
     reader.onload = e => {
       uploadedPreview.src = e.target.result;
       uploadedPreview.style.display = "block";
+      submitBtn.style.display = "block";
+      fileInput.style.display = "none";
+      document.getElementById("input-board").style.display = "none";
+      document.getElementById("solved-board").style.display = "none";
+      document.getElementById("solved-label").style.display = "none";
     };
     reader.readAsDataURL(file);
     outputDiv.innerText = "Image loaded. Click Submit to proceed.";
@@ -54,7 +65,6 @@ function renderBoard(data, tableId, editable = false) {
     const tr = document.createElement('tr');
     for (let col = 0; col < 9; col++) {
       const td = document.createElement('td');
-      
       if (editable) {
         const input = document.createElement('input');
         input.type = 'text';
@@ -65,8 +75,6 @@ function renderBoard(data, tableId, editable = false) {
         input.style.textAlign = 'center';
         input.style.border = 'none';
         input.style.fontSize = '18px';
-
-        // Validate input: only digits 1–9 or blank
         input.addEventListener('input', () => {
           const val = input.value.trim();
           if (!/^[1-9]?$/.test(val)) {
@@ -74,28 +82,15 @@ function renderBoard(data, tableId, editable = false) {
           }
           data[row][col] = val === '' ? 0 : parseInt(val);
         });
-
         td.appendChild(input);
       } else {
         td.textContent = data[row][col] === 0 ? '' : data[row][col];
       }
-
       tr.appendChild(td);
     }
     table.appendChild(tr);
   }
 }
-
-manualInputBtn.addEventListener("click", () => {
-  renderBoard(inputGrid, 'input-board', true); // Enable editing
-  outputDiv.innerText = "Edit the grid manually, then press Solve.";
-});
-
-manualFromConfirmBtn.addEventListener("click", () => {
-  document.getElementById("grid-confirm-section").style.display = "none";
-  document.getElementById("manual-corner-section").style.display = "block";
-  drawImageOnCanvas();
-});
 
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) {
@@ -149,7 +144,7 @@ async function handleGridDetection() {
       warpedPreview.src = detectResult.warped_url + "?" + Date.now();
       warpedPreview.style.display = "block";
       document.getElementById("grid-confirm-section").style.display = "block";
-      outputDiv.innerText = "Please confirm the detected grid.";
+      outputDiv.innerText = "";
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Grid not found. Try again or enter corners manually.";
@@ -164,7 +159,7 @@ async function handleGridDetection() {
 
 confirmGridBtn.addEventListener("click", async () => {
   document.getElementById("grid-confirm-section").style.display = "none";
-  outputDiv.innerText = "Reading digits...";
+  outputDiv.innerText = "";
 
   const formData = new FormData();
   formData.append("session_id", sessionId);
@@ -180,6 +175,7 @@ confirmGridBtn.addEventListener("click", async () => {
     if (result.input) {
       inputGrid = result.input;
       renderBoard(inputGrid, "input-board", true);
+      document.getElementById("input-board").style.display = "table";
       document.getElementById("ocr-confirm-section").style.display = "block";
       outputDiv.innerText = "Please confirm the OCR result.";
       currentStep = AppState.OCR_CONFIRM;
@@ -193,32 +189,49 @@ confirmGridBtn.addEventListener("click", async () => {
   }
 });
 
-
-retryGridBtn.addEventListener("click", () => {
-  document.getElementById("grid-confirm-section").style.display = "none";
-  outputDiv.innerText = "Please upload a new image.";
-  uploadedPreview.style.display = "none";
-  warpedPreview.style.display = "none";
-  currentStep = AppState.IMAGE_UPLOAD;
+manualInputBtn.addEventListener("click", () => {
+  renderBoard(inputGrid, 'input-board', true);
+  outputDiv.innerText = "Edit the grid manually, then press Solve.";
 });
 
 confirmOCRBtn.addEventListener("click", () => {
   document.getElementById("ocr-confirm-section").style.display = "none";
+  document.getElementById("input-board").style.display = "none";
   outputDiv.innerText = "Solving visually...";
   currentStep = AppState.VISUAL_SOLVE;
   handleSolveVisual(inputGrid);
 });
 
+retryGridBtn.addEventListener("click", () => {
+  document.getElementById("grid-confirm-section").style.display = "none";
+  document.getElementById("ocr-confirm-section").style.display = "none";
+  document.getElementById("input-board").style.display = "none";
+  document.getElementById("solved-board").style.display = "none";
+  document.getElementById("solved-label").style.display = "none";
+  fileInput.style.display = "inline";
+  submitBtn.style.display = "none";
+  warpedPreview.style.display = "none";
+  uploadedPreview.style.display = "none";
+  outputDiv.innerText = "Please upload a new image.";
+  currentStep = AppState.IMAGE_UPLOAD;
+});
+
 retryOCRBtn.addEventListener("click", () => {
   document.getElementById("ocr-confirm-section").style.display = "none";
-  outputDiv.innerText = "Please upload a new image.";
+  document.getElementById("input-board").style.display = "none";
+  document.getElementById("solved-board").style.display = "none";
+  document.getElementById("solved-label").style.display = "none";
+  fileInput.style.display = "inline";
+  submitBtn.style.display = "none";
   uploadedPreview.style.display = "none";
   warpedPreview.style.display = "none";
+  outputDiv.innerText = "Please upload a new image.";
   currentStep = AppState.IMAGE_UPLOAD;
 });
 
 async function handleOCRConfirmation() {
   renderBoard(inputGrid, 'input-board');
+  document.getElementById("input-board").style.display = "table";
   document.getElementById("ocr-confirm-section").style.display = "block";
   outputDiv.innerText = "Confirm OCR output or upload again.";
 }
@@ -239,7 +252,8 @@ async function handleSolveVisual(grid) {
 
   const finalBoard = result.finalBoard;
   const board = grid.map(row => [...row]);
-  solvedLabel.style.display = "block";
+  document.getElementById("solved-board").style.display = "table";
+  document.getElementById("solved-label").style.display = "block";
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
   const ANIMATION_DELAY = 50;
@@ -277,7 +291,7 @@ function drawImageOnCanvas() {
 }
 
 const HANDLE_RADIUS = 8;
-let draggingIndex = null;
+draggingIndex = null;
 
  cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
 
