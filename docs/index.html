@@ -107,6 +107,17 @@
     <button id="retry-grid">Upload New Image</button>
   </div>
 
+  <div id="manual-corner-section" style="text-align:center; display:none;">
+    <p>Click 4 corners of the Sudoku grid (in order: TL, TR, BR, BL)</p>
+    <canvas id="corner-canvas" width="450" height="450" style="border: 1px solid #aaa;"></canvas>
+    <div>
+      <button id="reset-corners">Reset</button>
+      <button id="submit-corners">Submit Corners</button>
+    </div>
+  </div>
+
+  <button id="manual-corner-btn" style="display:none;">Enter Corners Manually</button>
+
   <div class="grid-title">OCR Input</div>
   <table id="input-board"></table>
 

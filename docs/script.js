@@ -19,6 +19,13 @@ const confirmGridBtn = document.getElementById("confirm-grid");
 const retryGridBtn = document.getElementById("retry-grid");
 const confirmOCRBtn = document.getElementById("confirm-ocr");
 const retryOCRBtn = document.getElementById("retry-ocr");
+const manualCornerBtn = document.getElementById("manual-corner-btn");
+const canvas = document.getElementById("corner-canvas");
+const ctx = canvas.getContext("2d");
+const resetCornersBtn = document.getElementById("reset-corners");
+const submitCornersBtn = document.getElementById("submit-corners");
+
+let cornerPoints = [];
 
 let sessionId = localStorage.getItem("sudoku_session_id") || null;
 
@@ -73,33 +80,43 @@ submitBtn.addEventListener("click", async () => {
 async function handleGridDetection() {
   const formData = new FormData();
   formData.append("image", uploadedImage);
-  if (sessionId) formData.append("session_id", sessionId);
 
   try {
-    const response = await fetch("/upload", {
+    const uploadResponse = await fetch("/upload", {
       method: "POST",
       body: formData,
     });
-    const result = await response.json();
+    const uploadResult = await uploadResponse.json();
 
-    if (!sessionId && result.session_id) {
-      sessionId = result.session_id;
-      localStorage.setItem("sudoku_session_id", sessionId);
+    if (!uploadResponse.ok || !uploadResult.session_id) {
+      outputDiv.innerText = "Failed to upload image.";
+      return;
     }
 
-    if (result.warped_url) {
-      warpedPreview.src = result.warped_url + "?" + Date.now();
+    sessionId = uploadResult.session_id;
+    localStorage.setItem("sudoku_session_id", sessionId);
+
+    const gridFormData = new FormData();
+    gridFormData.append("session_id", sessionId);
+
+    const detectResponse = await fetch("/detect_grid", {
+      method: "POST",
+      body: gridFormData,
+    });
+
+    const detectResult = await detectResponse.json();
+
+    if (detectResult.warped_url && detectResult.corners) {
+      warpedPreview.src = detectResult.warped_url + "?" + Date.now();
       warpedPreview.style.display = "block";
       document.getElementById("grid-confirm-section").style.display = "block";
       outputDiv.innerText = "Please confirm the detected grid.";
       currentStep = AppState.GRID_CONFIRM;
     } else {
-      outputDiv.innerText = "Grid not found. Try a new image.";
+      outputDiv.innerText = "Grid not found. Try again or enter corners manually.";
+      manualCornerBtn.style.display = "block";
     }
 
-    if (result.input) {
-      inputGrid = result.input;
-    }
   } catch (err) {
     console.error(err);
     outputDiv.innerText = "Error during grid detection.";
@@ -187,3 +204,77 @@ async function handleSolveVisual(grid) {
   await solve(boardCopy);
   outputDiv.innerText = "Sudoku Solved!";
 }
+
+// Manual Corner Input
+
+manualCornerBtn.addEventListener("click", () => {
+  manualCornerBtn.style.display = "none";
+  document.getElementById("manual-corner-section").style.display = "block";
+  drawImageOnCanvas();
+});
+
+function drawImageOnCanvas() {
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+  };
+  img.src = uploadedPreview.src;
+}
+
+canvas.addEventListener("click", (e) => {
+  if (cornerPoints.length >= 4) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  cornerPoints.push([x, y]);
+
+  ctx.fillStyle = "red";
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, 2 * Math.PI);
+  ctx.fill();
+
+  ctx.font = "12px sans-serif";
+  ctx.fillText(["TL", "TR", "BR", "BL"][cornerPoints.length - 1], x + 6, y - 6);
+});
+
+resetCornersBtn.addEventListener("click", () => {
+  cornerPoints = [];
+  drawImageOnCanvas();
+});
+
+submitCornersBtn.addEventListener("click", async () => {
+  if (cornerPoints.length !== 4) {
+    alert("Please click exactly 4 corners.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("session_id", sessionId);
+  formData.append("corners", JSON.stringify(cornerPoints));
+
+  try {
+    const response = await fetch("/manual_warp", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.warped_url) {
+      warpedPreview.src = result.warped_url + "?" + Date.now();
+      warpedPreview.style.display = "block";
+      document.getElementById("grid-confirm-section").style.display = "block";
+      document.getElementById("manual-corner-section").style.display = "none";
+      outputDiv.innerText = "Warp successful. Please confirm.";
+      currentStep = AppState.GRID_CONFIRM;
+    } else {
+      outputDiv.innerText = "Manual warp failed.";
+    }
+  } catch (err) {
+    console.error(err);
+    outputDiv.innerText = "Error sending manual corners.";
+  }
+});

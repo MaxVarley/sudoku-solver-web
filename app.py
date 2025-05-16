@@ -3,6 +3,8 @@ import uuid
 import shutil
 import cv2
 from flask import Flask, request, jsonify, send_from_directory
+from vision.grid_detection import warp_from_corners
+import numpy as np
 
 from vision.preprocessing import preprocess_image, split_cells
 from vision.grid_detection import find_sudoku_contour, get_perspective_transform
@@ -83,6 +85,35 @@ def detect_grid():
     except Exception as e:
         return jsonify({'error': f'Detection failed: {str(e)}'}), 500
 
+@app.route('/manual_warp', methods=['POST'])
+def manual_warp():
+    session_id = request.form.get('session_id')
+    corners = request.form.get('corners')
+
+    if not session_id or not corners:
+        return jsonify({'error': 'Missing session_id or corners'}), 400
+
+    try:
+        # Parse stringified list of points
+        corners = np.array(eval(corners), dtype="float32")
+        if corners.shape != (4, 2):
+            raise ValueError("Corners must be a 4x2 array")
+
+        session_id, session_path = get_session_path(session_id)
+        image_path = os.path.join(session_path, 'uploaded_image.png')
+        original = cv2.imread(image_path)
+
+        warped = warp_from_corners(original, corners)
+        warped_path = os.path.join(session_path, 'warped_board.png')
+        cv2.imwrite(warped_path, warped)
+
+        return jsonify({
+            'warped_url': f'/sessions/{session_id}/warped_board.png',
+            'message': 'Manual warp successful'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Manual warp failed: {str(e)}'}), 500
 
 @app.route('/ocr', methods=['POST'])
 def ocr_grid():
