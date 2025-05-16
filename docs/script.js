@@ -109,6 +109,13 @@ function resetAll() {
   startOverBtn.style.display = "none";
 }
 
+manualCornerBtn.addEventListener("click", () => {
+  resetAll();
+  document.getElementById("manual-corner-section").style.display = "block";
+  drawImageOnCanvas();
+});
+
+
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) return alert("Please upload an image first.");
   switch (currentStep) {
@@ -168,7 +175,7 @@ confirmGridBtn.addEventListener("click", async () => {
       inputBoard.style.display = "table";
       ocrLabel.style.display = "block";
       ocrConfirmSection.style.display = "block";
-      outputDiv.innerText = "Please confirm the OCR result.";
+      document.getElementById("ocr-prompt").style.display = "block";
       currentStep = AppState.OCR_CONFIRM;
     } else {
       outputDiv.innerText = "OCR failed.";
