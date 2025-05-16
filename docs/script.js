@@ -224,49 +224,35 @@ async function handleOCRConfirmation() {
 }
 
 async function handleSolveVisual(grid) {
-  const delay = ms => new Promise(res => setTimeout(res, ms));
+  const response = await fetch("/solve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ grid })
+  });
 
-  function isValid(board, row, col, num) {
-    for (let x = 0; x < 9; x++) {
-      if (board[row][x] === num || board[x][col] === num) return false;
-    }
-    const startRow = Math.floor(row / 3) * 3;
-    const startCol = Math.floor(col / 3) * 3;
-    for (let r = startRow; r < startRow + 3; r++) {
-      for (let c = startCol; c < startCol + 3; c++) {
-        if (board[r][c] === num) return false;
-      }
-    }
-    return true;
+  const result = await response.json();
+
+  if (!result.success || !result.steps) {
+    outputDiv.innerText = "Could not solve this puzzle.";
+    return;
   }
 
-  async function solve(board) {
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
-        if (board[row][col] === 0) {
-          for (let num = 1; num <= 9; num++) {
-            if (isValid(board, row, col, num)) {
-              board[row][col] = num;
-              renderBoard(board, 'solved-board');
-              await delay(5);
-              if (await solve(board)) return true;
-              board[row][col] = 0;
-              renderBoard(board, 'solved-board');
-              await delay(5);
-            }
-          }
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
+  const steps = result.steps;
+  const board = grid.map(row => [...row]);
   solvedLabel.style.display = "block";
-  const boardCopy = grid.map(row => [...row]);
-  await solve(boardCopy);
+
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+  const baseDelay = 10;  // Adjust speed here
+
+  for (const { row, col, value } of steps) {
+    board[row][col] = value;
+    renderBoard(board, 'solved-board');
+    await delay(baseDelay);
+  }
+
   outputDiv.innerText = "Sudoku Solved!";
 }
+
 
 // Manual Corner Input
 

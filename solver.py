@@ -24,22 +24,18 @@ def is_board_valid(board):
     return True
 
 def is_valid(board, row, col, num):
-    #Check row
     if num in board[row]:
         return False
-
-    #Check column
     for i in range(9):
         if board[i][col] == num:
             return False
-
     box_start_row = row - row % BOX_SIZE
     box_start_col = col - col % BOX_SIZE
     for i in range(BOX_SIZE):
         for j in range(BOX_SIZE):
             if board[box_start_row + i][box_start_col + j] == num:
-                return False # Number is in BOX_SIZExBOX_SIZE box
-    return True # All checks passed - number is valid
+                return False
+    return True
 
 def solve_sudoku(board):
     for row in range(9):
@@ -51,9 +47,36 @@ def solve_sudoku(board):
                         if solve_sudoku(board):
                             return True 
                         board[row][col] = 0
-                return False # No valid number found for this cell, backtrack
-    return True # Sudoku solved successfully
+                return False
+    return True
+
+def solve_and_record_steps(board):
+    """
+    Solves the board and records each placement and removal as a step.
+    Each step is a dictionary: {'row': r, 'col': c, 'value': v}
+    """
+    steps = []
+
+    def backtrack():
+        for row in range(9):
+            for col in range(9):
+                if board[row][col] == 0:
+                    for num in range(1, 10):
+                        if is_valid(board, row, col, num):
+                            board[row][col] = num
+                            steps.append({'row': row, 'col': col, 'value': num})
+
+                            if backtrack():
+                                return True
+
+                            board[row][col] = 0
+                            steps.append({'row': row, 'col': col, 'value': 0})
+                    return False
+        return True
+
+    success = backtrack()
+    return success, steps, board
 
 def print_board(board):
     for row in board:
-        print(" ".join(str(num) if num != 0 else "." for num in row)) # Print the board with '.' for empty cells
+        print(" ".join(str(num) if num != 0 else "." for num in row))
