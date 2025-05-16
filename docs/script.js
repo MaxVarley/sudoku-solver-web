@@ -289,9 +289,7 @@ function drawImageOnCanvas() {
 const HANDLE_RADIUS = 8;
 let draggingIndex = null;
 
-let cornerPoints = [
-  [50, 50], [400, 50], [400, 400], [50, 400]
-];
+ cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
 
 let uploadedCanvasImage = new Image();
 uploadedCanvasImage.onload = () => drawCanvas();
