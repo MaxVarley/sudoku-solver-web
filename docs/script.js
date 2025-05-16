@@ -24,6 +24,8 @@ const canvas = document.getElementById("corner-canvas");
 const ctx = canvas.getContext("2d");
 const resetCornersBtn = document.getElementById("reset-corners");
 const submitCornersBtn = document.getElementById("submit-corners");
+const manualFromConfirmBtn = document.getElementById("manual-from-confirm");
+
 
 let cornerPoints = [];
 
@@ -44,19 +46,52 @@ fileInput.addEventListener("change", () => {
   }
 });
 
-function renderBoard(data, tableId) {
+function renderBoard(data, tableId, editable = false) {
   const table = document.getElementById(tableId);
   table.innerHTML = '';
+
   for (let row = 0; row < 9; row++) {
     const tr = document.createElement('tr');
     for (let col = 0; col < 9; col++) {
       const td = document.createElement('td');
-      td.textContent = data[row][col] === 0 ? '' : data[row][col];
+      
+      if (editable) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 1;
+        input.value = data[row][col] === 0 ? '' : data[row][col];
+        input.style.width = '28px';
+        input.style.height = '28px';
+        input.style.textAlign = 'center';
+        input.style.border = 'none';
+        input.style.fontSize = '18px';
+
+        // Validate input: only digits 1–9 or blank
+        input.addEventListener('input', () => {
+          const val = input.value.trim();
+          if (!/^[1-9]?$/.test(val)) {
+            input.value = '';
+          }
+          data[row][col] = val === '' ? 0 : parseInt(val);
+        });
+
+        td.appendChild(input);
+      } else {
+        td.textContent = data[row][col] === 0 ? '' : data[row][col];
+      }
+
       tr.appendChild(td);
     }
     table.appendChild(tr);
   }
 }
+
+
+manualFromConfirmBtn.addEventListener("click", () => {
+  document.getElementById("grid-confirm-section").style.display = "none";
+  document.getElementById("manual-corner-section").style.display = "block";
+  drawImageOnCanvas();
+});
 
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) {
@@ -123,13 +158,37 @@ async function handleGridDetection() {
   }
 }
 
-confirmGridBtn.addEventListener("click", () => {
+confirmGridBtn.addEventListener("click", async () => {
   document.getElementById("grid-confirm-section").style.display = "none";
-  renderBoard(inputGrid, "input-board");
-  document.getElementById("ocr-confirm-section").style.display = "block";
-  outputDiv.innerText = "Please confirm the OCR result.";
-  currentStep = AppState.OCR_CONFIRM;
+  outputDiv.innerText = "Reading digits...";
+
+  const formData = new FormData();
+  formData.append("session_id", sessionId);
+
+  try {
+    const ocrResponse = await fetch("/ocr", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await ocrResponse.json();
+
+    if (result.input) {
+      inputGrid = result.input;
+      renderBoard(inputGrid, "input-board", true);
+      document.getElementById("ocr-confirm-section").style.display = "block";
+      outputDiv.innerText = "Please confirm the OCR result.";
+      currentStep = AppState.OCR_CONFIRM;
+    } else {
+      outputDiv.innerText = "OCR failed. Please try a new image.";
+    }
+
+  } catch (err) {
+    console.error(err);
+    outputDiv.innerText = "Error during OCR.";
+  }
 });
+
 
 retryGridBtn.addEventListener("click", () => {
   document.getElementById("grid-confirm-section").style.display = "none";

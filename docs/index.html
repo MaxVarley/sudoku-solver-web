@@ -85,6 +85,11 @@
       margin: 0.5rem;
     }
 
+    td input:focus {
+      outline: 2px solid #0077cc;
+      background-color: #eef;
+    }
+
   </style>
 </head>
 <body>
@@ -104,6 +109,7 @@
   <div id="grid-confirm-section" class="button-group" style="display:none;">
     <p>Is this the correct grid?</p>
     <button id="confirm-grid">Yes</button>
+    <button id="manual-from-confirm">Manually Set Corners</button>
     <button id="retry-grid">Upload New Image</button>
   </div>
 
