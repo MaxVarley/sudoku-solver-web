@@ -40,9 +40,8 @@ const submitCornersBtn = document.getElementById("submit-corners");
 
 const startOverBtn = document.createElement("button");
 startOverBtn.innerText = "Start Over";
-startOverBtn.style.display = "none";
+startOverBtn.style.display = "none"; // Keep hidden initially
 startOverBtn.style.margin = "1rem auto";
-startOverBtn.style.display = "block";
 startOverBtn.onclick = () => location.reload();
 document.body.appendChild(startOverBtn);
 
@@ -195,10 +194,12 @@ confirmGridBtn.addEventListener("click", async () => {
 confirmOCRBtn.addEventListener("click", () => {
   ocrConfirmSection.style.display = "none";
   inputBoard.style.display = "none";
+  document.getElementById("ocr-prompt").style.display = "none"; // Hide OCR prompt
   outputDiv.innerText = "Solving visually...";
   currentStep = AppState.VISUAL_SOLVE;
   handleSolveVisual(inputGrid);
 });
+
 
 retryGridBtn.addEventListener("click", resetAll);
 retryOCRBtn.addEventListener("click", resetAll);
