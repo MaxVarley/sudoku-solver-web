@@ -232,22 +232,26 @@ async function handleSolveVisual(grid) {
 
   const result = await response.json();
 
-  if (!result.success || !result.steps) {
+  if (!result.success || !result.finalBoard) {
     outputDiv.innerText = "Could not solve this puzzle.";
     return;
   }
 
-  const steps = result.steps;
+  const finalBoard = result.finalBoard;
   const board = grid.map(row => [...row]);
   solvedLabel.style.display = "block";
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
-  const baseDelay = 10;  // Adjust speed here
+  const ANIMATION_DELAY = 50;
 
-  for (const { row, col, value } of steps) {
-    board[row][col] = value;
-    renderBoard(board, 'solved-board');
-    await delay(baseDelay);
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      if (board[row][col] === 0) {
+        board[row][col] = finalBoard[row][col];
+        renderBoard(board, 'solved-board');
+        await delay(ANIMATION_DELAY);
+      }
+    }
   }
 
   outputDiv.innerText = "Sudoku Solved!";
