@@ -60,54 +60,22 @@ def preprocess_for_model(cell_img, debug_path=None, margin=0.18):
     return img_array
 
 def split_cells(warped_img):
-    gray = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-    edges = cv2.Canny(blurred, 50, 150, apertureSize=3)
 
-    # Detect lines with Hough Transform
-    lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=100,
-                            minLineLength=warped_img.shape[1]//4, maxLineGap=10)
-
-    if lines is None or len(lines) < 20:
-        raise ValueError("Insufficient lines detected to segment grid.")
-
-    vertical_lines = []
-    horizontal_lines = []
-
-    for line in lines:
-        x1, y1, x2, y2 = line[0]
-        if abs(x1 - x2) < 10:
-            vertical_lines.append((x1 + x2) // 2)
-        elif abs(y1 - y2) < 10:
-            horizontal_lines.append((y1 + y2) // 2)
-
-    # Remove duplicates / clustered lines using histogram-style binning
-    def cluster_lines(lines, axis_size, expected_count=10):
-        lines = sorted(lines)
-        clustered = []
-        threshold = axis_size // (expected_count * 2)  # cluster width
-
-        for line in lines:
-            if not clustered or abs(line - clustered[-1]) > threshold:
-                clustered.append(line)
-        return clustered
-
-    h, w = warped_img.shape[:2]
-    vertical_lines = cluster_lines(vertical_lines, w)
-    horizontal_lines = cluster_lines(horizontal_lines, h)
-
-    if len(vertical_lines) != 10 or len(horizontal_lines) != 10:
-        raise ValueError(f"Expected 10 lines each, got {len(vertical_lines)} vertical and {len(horizontal_lines)} horizontal.")
-
-    # Extract cells using intersections
     grid = []
+    h, w = warped_img.shape[:2]
+    cell_h = h // 9
+    cell_w = w // 9
+
+    # Splits into 9 rows and 9 columns, could be improved with more advanced techniques
+    # like Hough Transform or contour detection for more complex grids
+    # Common problem is variable width of borders (exterior = thick, interior = thin)
+    # This is a simple approach that assumes uniform cell size and spacing
     for i in range(9):
         row = []
-        y1, y2 = horizontal_lines[i], horizontal_lines[i + 1]
         for j in range(9):
-            x1, x2 = vertical_lines[j], vertical_lines[j + 1]
-            cell = warped_img[y1:y2, x1:x2]
+            x_start = j * cell_w
+            y_start = i * cell_h
+            cell = warped_img[y_start:y_start + cell_h, x_start:x_start + cell_w]
             row.append(cell)
         grid.append(row)
-
     return grid
