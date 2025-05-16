@@ -23,9 +23,14 @@
     }
 
     #submit-btn {
-      margin-top: 1rem;
       display: none;
     }
+
+    #submit-container {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
 
     #uploaded-preview {
       display: block;
@@ -102,8 +107,11 @@
   <div id="upload-section">
     <input type="file" id="upload" accept="image/*"><br>
     <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
-    <button id="submit-btn">Submit</button>
+    <div id="submit-container">
+      <button id="submit-btn">Submit</button>
+    </div>
   </div>
+
 
   <div id="output"></div>
 
