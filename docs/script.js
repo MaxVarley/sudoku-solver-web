@@ -221,7 +221,7 @@ async function handleSolveVisual(grid) {
   const result = await res.json();
   if (!result.success || !result.finalBoard) {
     outputDiv.innerText = "Could not solve this puzzle.";
-    restartContainer.style.display = "block";
+    document.getElementById("restart-container").style.display = "block";
     return;
   }
 
@@ -230,8 +230,12 @@ async function handleSolveVisual(grid) {
   solvedLabel.style.display = "block";
   solvedBoard.style.display = "table";
 
-  solvedBoard.scrollIntoView({ behavior: "smooth", block: "center" });
+  // Wait a tick for DOM to render, then scroll
+  requestAnimationFrame(() => {
+    solvedLabel.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 
+  // Animate solution
   const delay = ms => new Promise(res => setTimeout(res, ms));
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
@@ -243,16 +247,15 @@ async function handleSolveVisual(grid) {
     }
   }
 
-  document.querySelectorAll(".grid-title").forEach(el => {
-    if (el.innerText === "Sudoku Solved!") el.remove();
-  });
-
+  // Show success message and start over
   const solvedMsg = document.createElement("div");
   solvedMsg.className = "grid-title";
   solvedMsg.innerText = "Sudoku Solved!";
   solvedBoard.insertAdjacentElement("afterend", solvedMsg);
-  restartContainer.style.display = "block";
+
+  document.getElementById("restart-container").style.display = "block";
 }
+
 
 // Manual Corners
 manualCornerBtn.addEventListener("click", () => {
