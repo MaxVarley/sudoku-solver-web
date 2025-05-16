@@ -9,7 +9,7 @@ import numpy as np
 from vision.preprocessing import preprocess_image, split_cells
 from vision.grid_detection import find_sudoku_contour, get_perspective_transform
 from vision.OCR import recognize_cells
-from solver import solve_sudoku
+from solver import solve_and_record_steps
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'sessions'
@@ -143,16 +143,18 @@ def solve():
 
     try:
         board = data['grid']
-        board_copy = [row[:] for row in board]
-        solved = solve_sudoku(board_copy)
+        board_copy = [row[:] for row in board]  # Deep copy to preserve input
+        success, steps, final_board = solve_and_record_steps(board_copy)
 
         return jsonify({
-            'solved': board_copy if solved else None,
-            'success': solved
+            'success': success,
+            'steps': steps,
+            'finalBoard': final_board
         })
 
     except Exception as e:
         return jsonify({'error': f'Solving failed: {str(e)}'}), 500
+
 
 
 @app.route('/sessions/<session_id>/<path:filename>')
