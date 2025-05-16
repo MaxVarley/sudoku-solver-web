@@ -38,6 +38,7 @@
       font-weight: bold;
       text-align: center;
       margin-top: 1rem;
+      white-space: pre-line;
     }
 
     .grid-title {
@@ -74,117 +75,50 @@
     tr:first-child td {
       border-top: 2px solid black;
     }
+
+    .button-group {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .button-group button {
+      margin: 0.5rem;
+    }
+
   </style>
 </head>
 <body>
   <h1>Sudoku Solver</h1>
 
   <div id="upload-section">
-    <input type="file" id="upload" accept="image/*">
-    <br>
-    <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;">
-    <br>
+    <input type="file" id="upload" accept="image/*"><br>
+    <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
     <button id="submit-btn">Submit</button>
   </div>
 
   <div id="output"></div>
 
+  <div class="grid-title">Detected Sudoku Grid (Warped)</div>
+  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="max-width: 100%; border: 1px solid #ccc; display: none;">
+
+  <div id="grid-confirm-section" class="button-group" style="display:none;">
+    <p>Is this the correct grid?</p>
+    <button id="confirm-grid">Yes</button>
+    <button id="retry-grid">Upload New Image</button>
+  </div>
+
   <div class="grid-title">OCR Input</div>
   <table id="input-board"></table>
+
+  <div id="ocr-confirm-section" class="button-group" style="display:none;">
+    <p>Is this the correct OCR result?</p>
+    <button id="confirm-ocr">Yes</button>
+    <button id="retry-ocr">Upload New Image</button>
+  </div>
 
   <div class="grid-title" id="solved-label" style="display:none;">Solved Board</div>
   <table id="solved-board"></table>
 
-  <div class="grid-title">Detected Sudoku Grid (Warped)</div>
-  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="max-width: 100%; border: 1px solid #ccc;">
-
-  <script>
-    const fileInput = document.getElementById("upload");
-    const outputDiv = document.getElementById("output");
-    const warpedPreview = document.getElementById("warped-preview");
-    const uploadedPreview = document.getElementById("uploaded-preview");
-    const solvedLabel = document.getElementById("solved-label");
-  
-    let sessionId = localStorage.getItem("sudoku_session_id") || null;
-  
-    fileInput.addEventListener("change", () => {
-      const file = fileInput.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          uploadedPreview.src = e.target.result;
-          uploadedPreview.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  
-    function renderBoard(data, tableId) {
-      const table = document.getElementById(tableId);
-      table.innerHTML = '';
-      for (let row = 0; row < 9; row++) {
-        const tr = document.createElement('tr');
-        for (let col = 0; col < 9; col++) {
-          const td = document.createElement('td');
-          td.textContent = data[row][col] === 0 ? '' : data[row][col];
-          tr.appendChild(td);
-        }
-        table.appendChild(tr);
-      }
-    }
-  
-    document.getElementById("submit-btn").addEventListener("click", async () => {
-      const file = fileInput.files[0];
-      if (!file) {
-        alert("Please select an image file.");
-        return;
-      }
-  
-      const formData = new FormData();
-      formData.append("image", file);
-      if (sessionId) {
-        formData.append("session_id", sessionId);
-      }
-  
-      try {
-        const response = await fetch("/upload", {
-          method: "POST",
-          body: formData,
-        });
-  
-        const result = await response.json();
-  
-        if (!sessionId && result.session_id) {
-          sessionId = result.session_id;
-          localStorage.setItem("sudoku_session_id", sessionId);
-        }
-  
-        if (result.input) {
-          renderBoard(result.input, 'input-board');
-          outputDiv.innerText = "Sudoku Found";
-        } else {
-          outputDiv.innerText = "Sudoku Not Found";
-        }
-  
-        if (result.warped_url) {
-          warpedPreview.src = result.warped_url + "?" + Date.now();
-        }
-  
-        if (result.success && result.solved) {
-          renderBoard(result.solved, 'solved-board');
-          solvedLabel.style.display = "block";
-          outputDiv.innerText += "\nSudoku Solved";
-        } else {
-          solvedLabel.style.display = "none";
-          outputDiv.innerText += "\nSudoku Not Solved";
-        }
-  
-      } catch (err) {
-        console.error(err);
-        outputDiv.textContent = "Error processing image.";
-      }
-    });
-  </script>
-  
+  <script src="script.js"></script>
 </body>
 </html>

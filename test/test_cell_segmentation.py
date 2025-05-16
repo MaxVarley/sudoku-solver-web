@@ -8,7 +8,7 @@ from tkinter.filedialog import askopenfilename
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from vision.preprocess import preprocess_image
+from vision.preprocessing import preprocess_image
 from vision.grid_detection import find_sudoku_contour, get_perspective_transform
 from vision.cell_segmentation import split_cells
 
