@@ -14,7 +14,7 @@ def preprocess_image(path):
     )
     return image, thresh
 
-def preprocess_for_model(cell_img, debug_path=None, margin=0.18):
+def preprocess_for_model(cell_img, debug_path=None, margin=0.17):
     if len(cell_img.shape) == 3:
         gray = cv2.cvtColor(cell_img, cv2.COLOR_BGR2GRAY)
     else:
