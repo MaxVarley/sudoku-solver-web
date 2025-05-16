@@ -25,7 +25,7 @@ const ctx = canvas.getContext("2d");
 const resetCornersBtn = document.getElementById("reset-corners");
 const submitCornersBtn = document.getElementById("submit-corners");
 const manualFromConfirmBtn = document.getElementById("manual-from-confirm");
-
+const manualInputBtn = document.getElementById("manual-input-btn");
 
 let cornerPoints = [];
 
@@ -86,6 +86,10 @@ function renderBoard(data, tableId, editable = false) {
   }
 }
 
+manualInputBtn.addEventListener("click", () => {
+  renderBoard(inputGrid, 'input-board', true); // Enable editing
+  outputDiv.innerText = "Edit the grid manually, then press Solve.";
+});
 
 manualFromConfirmBtn.addEventListener("click", () => {
   document.getElementById("grid-confirm-section").style.display = "none";
@@ -282,37 +286,96 @@ function drawImageOnCanvas() {
   img.src = uploadedPreview.src;
 }
 
-canvas.addEventListener("click", (e) => {
-  if (cornerPoints.length >= 4) return;
+const HANDLE_RADIUS = 8;
+let draggingIndex = null;
 
+let cornerPoints = [
+  [50, 50], [400, 50], [400, 400], [50, 400]
+];
+
+let uploadedCanvasImage = new Image();
+uploadedCanvasImage.onload = () => drawCanvas();
+
+function drawImageOnCanvas() {
+  uploadedCanvasImage.src = uploadedPreview.src;
+}
+
+function drawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(uploadedCanvasImage, 0, 0, canvas.width, canvas.height);
+
+  // Outline
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(...cornerPoints[0]);
+  for (let i = 1; i < 4; i++) {
+    ctx.lineTo(...cornerPoints[i]);
+  }
+  ctx.closePath();
+  ctx.stroke();
+
+  // Corner handles
+  for (let i = 0; i < 4; i++) {
+    const [x, y] = cornerPoints[i];
+    ctx.beginPath();
+    ctx.arc(x, y, HANDLE_RADIUS, 0, 2 * Math.PI);
+    ctx.fillStyle = "red";
+    ctx.fill();
+    ctx.strokeText(["TL", "TR", "BR", "BL"][i], x + 10, y - 5);
+  }
+}
+
+canvas.addEventListener("mousedown", (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  cornerPoints.push([x, y]);
 
-  ctx.fillStyle = "red";
-  ctx.beginPath();
-  ctx.arc(x, y, 5, 0, 2 * Math.PI);
-  ctx.fill();
+  for (let i = 0; i < 4; i++) {
+    const [cx, cy] = cornerPoints[i];
+    const dist = Math.hypot(cx - x, cy - y);
+    if (dist < HANDLE_RADIUS * 2) {
+      draggingIndex = i;
+      return;
+    }
+  }
+});
 
-  ctx.font = "12px sans-serif";
-  ctx.fillText(["TL", "TR", "BR", "BL"][cornerPoints.length - 1], x + 6, y - 6);
+canvas.addEventListener("mousemove", (e) => {
+  if (draggingIndex === null) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  cornerPoints[draggingIndex] = [x, y];
+  drawCanvas();
+});
+
+canvas.addEventListener("mouseup", () => {
+  draggingIndex = null;
+});
+
+canvas.addEventListener("mouseleave", () => {
+  draggingIndex = null;
 });
 
 resetCornersBtn.addEventListener("click", () => {
-  cornerPoints = [];
-  drawImageOnCanvas();
+  cornerPoints = [
+    [50, 50], [400, 50], [400, 400], [50, 400]
+  ];
+  drawCanvas();
 });
 
 submitCornersBtn.addEventListener("click", async () => {
-  if (cornerPoints.length !== 4) {
-    alert("Please click exactly 4 corners.");
-    return;
-  }
+  const scaledCorners = cornerPoints.map(([x, y]) => {
+    const scaleX = uploadedCanvasImage.naturalWidth / canvas.width;
+    const scaleY = uploadedCanvasImage.naturalHeight / canvas.height;
+    return [x * scaleX, y * scaleY];
+  });
 
   const formData = new FormData();
   formData.append("session_id", sessionId);
-  formData.append("corners", JSON.stringify(cornerPoints));
+  formData.append("corners", JSON.stringify(scaledCorners));
 
   try {
     const response = await fetch("/manual_warp", {

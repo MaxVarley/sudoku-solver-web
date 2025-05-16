@@ -114,13 +114,14 @@
   </div>
 
   <div id="manual-corner-section" style="text-align:center; display:none;">
-    <p>Click 4 corners of the Sudoku grid (in order: TL, TR, BR, BL)</p>
-    <canvas id="corner-canvas" width="450" height="450" style="border: 1px solid #aaa;"></canvas>
-    <div>
+    <p>Adjust the red corners to outline the Sudoku grid:</p>
+    <canvas id="corner-canvas" width="450" height="450" style="border: 1px solid #aaa; touch-action: none;"></canvas>
+    <div style="margin-top: 1rem;">
       <button id="reset-corners">Reset</button>
       <button id="submit-corners">Submit Corners</button>
     </div>
   </div>
+
 
   <button id="manual-corner-btn" style="display:none;">Enter Corners Manually</button>
 
@@ -130,6 +131,7 @@
   <div id="ocr-confirm-section" class="button-group" style="display:none;">
     <p>Is this the correct OCR result?</p>
     <button id="confirm-ocr">Yes</button>
+    <button id="manual-input-btn">Enter Numbers Manually</button>
     <button id="retry-ocr">Upload New Image</button>
   </div>
 
