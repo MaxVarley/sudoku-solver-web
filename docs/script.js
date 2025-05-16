@@ -38,12 +38,10 @@ const ctx = canvas.getContext("2d");
 const resetCornersBtn = document.getElementById("reset-corners");
 const submitCornersBtn = document.getElementById("submit-corners");
 
-const startOverBtn = document.createElement("button");
-startOverBtn.innerText = "Start Over";
-startOverBtn.style.display = "none"; // Keep hidden initially
-startOverBtn.style.margin = "1rem auto";
+const restartContainer = document.getElementById("restart-container");
+const startOverBtn = document.getElementById("start-over-btn");
+
 startOverBtn.onclick = () => location.reload();
-document.body.appendChild(startOverBtn);
 
 let cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
 let draggingIndex = null;
@@ -63,12 +61,16 @@ function renderBoard(data, tableId, editable = false) {
         input.type = 'text';
         input.maxLength = 1;
         input.value = data[row][col] === 0 ? '' : data[row][col];
-
         input.addEventListener('input', () => {
           const val = input.value.trim();
           input.value = /^[1-9]$/.test(val) ? val : '';
           data[row][col] = val === '' ? 0 : parseInt(val);
         });
+        input.style.width = '28px';
+        input.style.height = '28px';
+        input.style.textAlign = 'center';
+        input.style.border = 'none';
+        input.style.fontSize = '18px';
 
         td.appendChild(input);
       } else {
@@ -80,7 +82,6 @@ function renderBoard(data, tableId, editable = false) {
     table.appendChild(tr);
   }
 }
-
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
@@ -110,15 +111,9 @@ function resetAll() {
   warpedLabel.style.display = "none";
   manualCornerBtn.style.display = "none";
   document.getElementById("manual-corner-section").style.display = "none";
-  startOverBtn.style.display = "none";
+  document.getElementById("ocr-prompt").style.display = "none";
+  restartContainer.style.display = "none";
 }
-
-manualCornerBtn.addEventListener("click", () => {
-  resetAll();
-  document.getElementById("manual-corner-section").style.display = "block";
-  drawImageOnCanvas();
-});
-
 
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) return alert("Please upload an image first.");
@@ -164,7 +159,13 @@ async function handleGridDetection() {
 
 confirmGridBtn.addEventListener("click", async () => {
   gridConfirmSection.style.display = "none";
-  document.getElementById("reading-msg").style.display = "block";
+  outputDiv.innerText = "";
+
+  const readingDiv = document.createElement("div");
+  readingDiv.id = "reading-msg";
+  readingDiv.className = "grid-title";
+  readingDiv.innerText = "Reading digits...";
+  warpedPreview.insertAdjacentElement("afterend", readingDiv);
 
   const formData = new FormData();
   formData.append("session_id", sessionId);
@@ -180,26 +181,28 @@ confirmGridBtn.addEventListener("click", async () => {
       ocrLabel.style.display = "block";
       ocrConfirmSection.style.display = "block";
       document.getElementById("ocr-prompt").style.display = "block";
-      document.getElementById("reading-msg").style.display = "none";
+      readingDiv.remove();
       currentStep = AppState.OCR_CONFIRM;
     } else {
       outputDiv.innerText = "OCR failed.";
+      restartContainer.style.display = "block";
     }
   } catch (err) {
     outputDiv.innerText = "Error during OCR.";
+    restartContainer.style.display = "block";
   }
 });
-
 
 confirmOCRBtn.addEventListener("click", () => {
   ocrConfirmSection.style.display = "none";
   inputBoard.style.display = "none";
-  document.getElementById("ocr-prompt").style.display = "none"; // Hide OCR prompt
+  document.getElementById("ocr-prompt").style.display = "none";
+  const readingEl = document.getElementById("reading-msg");
+  if (readingEl) readingEl.remove();
   outputDiv.innerText = "Solving visually...";
   currentStep = AppState.VISUAL_SOLVE;
   handleSolveVisual(inputGrid);
 });
-
 
 retryGridBtn.addEventListener("click", resetAll);
 retryOCRBtn.addEventListener("click", resetAll);
@@ -219,6 +222,7 @@ async function handleSolveVisual(grid) {
   const result = await res.json();
   if (!result.success || !result.finalBoard) {
     outputDiv.innerText = "Could not solve this puzzle.";
+    restartContainer.style.display = "block";
     return;
   }
 
@@ -238,10 +242,16 @@ async function handleSolveVisual(grid) {
     }
   }
 
-  outputDiv.innerText = "Sudoku Solved!";
-  startOverBtn.style.display = "block";
-}
+  document.querySelectorAll(".grid-title").forEach(el => {
+    if (el.innerText === "Sudoku Solved!") el.remove();
+  });
 
+  const solvedMsg = document.createElement("div");
+  solvedMsg.className = "grid-title";
+  solvedMsg.innerText = "Sudoku Solved!";
+  solvedBoard.insertAdjacentElement("afterend", solvedMsg);
+  restartContainer.style.display = "block";
+}
 
 // Manual Corners
 manualCornerBtn.addEventListener("click", () => {
@@ -335,8 +345,10 @@ submitCornersBtn.addEventListener("click", async () => {
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Manual warp failed.";
+      restartContainer.style.display = "block";
     }
   } catch (err) {
     outputDiv.innerText = "Error sending manual corners.";
+    restartContainer.style.display = "block";
   }
 });
