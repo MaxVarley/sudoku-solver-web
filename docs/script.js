@@ -248,11 +248,11 @@ async function handleSolveVisual(grid) {
             if (isValid(board, row, col, num)) {
               board[row][col] = num;
               renderBoard(board, 'solved-board');
-              await delay(50);
+              await delay(5);
               if (await solve(board)) return true;
               board[row][col] = 0;
               renderBoard(board, 'solved-board');
-              await delay(50);
+              await delay(5);
             }
           }
           return false;
