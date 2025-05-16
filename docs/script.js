@@ -58,25 +58,30 @@ function renderBoard(data, tableId, editable = false) {
     const tr = document.createElement('tr');
     for (let col = 0; col < 9; col++) {
       const td = document.createElement('td');
+
       if (editable) {
         const input = document.createElement('input');
         input.type = 'text';
         input.maxLength = 1;
         input.value = data[row][col] === 0 ? '' : data[row][col];
+
         input.addEventListener('input', () => {
           const val = input.value.trim();
           input.value = /^[1-9]$/.test(val) ? val : '';
           data[row][col] = val === '' ? 0 : parseInt(val);
         });
+
         td.appendChild(input);
       } else {
         td.textContent = data[row][col] === 0 ? '' : data[row][col];
       }
+
       tr.appendChild(td);
     }
     table.appendChild(tr);
   }
 }
+
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
@@ -160,7 +165,7 @@ async function handleGridDetection() {
 
 confirmGridBtn.addEventListener("click", async () => {
   gridConfirmSection.style.display = "none";
-  outputDiv.innerText = "Reading digits...";
+  document.getElementById("reading-msg").style.display = "block";
 
   const formData = new FormData();
   formData.append("session_id", sessionId);
@@ -176,6 +181,7 @@ confirmGridBtn.addEventListener("click", async () => {
       ocrLabel.style.display = "block";
       ocrConfirmSection.style.display = "block";
       document.getElementById("ocr-prompt").style.display = "block";
+      document.getElementById("reading-msg").style.display = "none";
       currentStep = AppState.OCR_CONFIRM;
     } else {
       outputDiv.innerText = "OCR failed.";
@@ -184,6 +190,7 @@ confirmGridBtn.addEventListener("click", async () => {
     outputDiv.innerText = "Error during OCR.";
   }
 });
+
 
 confirmOCRBtn.addEventListener("click", () => {
   ocrConfirmSection.style.display = "none";

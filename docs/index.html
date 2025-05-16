@@ -4,102 +4,123 @@
   <meta charset="UTF-8">
   <title>Sudoku Solver</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 1.5rem;
-      max-width: 600px;
-      margin: auto;
-    }
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 1.5rem;
+    max-width: 600px;
+    margin: auto;
+  }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
+  h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
 
-    #upload-section {
-      text-align: center;
-      margin-bottom: 1rem;
-    }
+  #upload-section {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
 
-    #submit-btn {
-      display: none;
-    }
+  #submit-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
 
-    #submit-container {
-      text-align: center;
-      margin-top: 1rem;
-    }
+  #submit-btn {
+    display: none;
+  }
 
+  #uploaded-preview {
+    display: block;
+    max-width: 100%;
+    margin: 1rem auto;
+    border: 2px dashed #aaa;
+    padding: 0.5rem;
+  }
 
-    #uploaded-preview {
-      display: block;
-      max-width: 100%;
-      margin: 1rem auto;
-      border: 2px dashed #aaa;
-      padding: 0.5rem;
-    }
+  #output {
+    font-weight: bold;
+    text-align: center;
+    margin: 1rem 0;
+    white-space: pre-line;
+  }
 
-    #output {
-      font-weight: bold;
-      text-align: center;
-      margin: 1rem 0;
-      white-space: pre-line;
-    }
+  .grid-title {
+    text-align: center;
+    font-weight: bold;
+    margin: 1rem 0 0.5rem;
+  }
 
-    .grid-title {
-      text-align: center;
-      font-weight: bold;
-      margin: 1rem 0 0.5rem;
-    }
+  table {
+    border-collapse: collapse;
+    margin: auto;
+  }
 
-    table {
-      border-collapse: collapse;
-      margin: auto;
-    }
+  td {
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    font-size: 18px;
+    border: 1px solid #888;
+  }
 
-    td {
-      width: 30px;
-      height: 30px;
-      text-align: center;
-      font-size: 18px;
-      border: 1px solid #888;
-    }
+  td:nth-child(3n) {
+    border-right: 2px solid black;
+  }
 
-    td:nth-child(3n) {
-      border-right: 2px solid black;
-    }
+  tr:nth-child(3n) td {
+    border-bottom: 2px solid black;
+  }
 
-    tr:nth-child(3n) td {
-      border-bottom: 2px solid black;
-    }
+  td:first-child {
+    border-left: 2px solid black;
+  }
 
-    td:first-child {
-      border-left: 2px solid black;
-    }
+  tr:first-child td {
+    border-top: 2px solid black;
+  }
 
-    tr:first-child td {
-      border-top: 2px solid black;
-    }
+  td:hover {
+    background-color: #f4f4f4;
+  }
 
-    .button-group {
-      text-align: center;
-      margin-top: 1rem;
-    }
+  td input {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    border: none;
+    font-size: 18px;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease, outline 0.2s ease;
+  }
 
-    .button-group button {
-      margin: 0.5rem;
-    }
+  td input:focus {
+    outline: 2px solid #0077cc;
+    background-color: #eef;
+  }
 
-    td input:focus {
-      outline: 2px solid #0077cc;
-      background-color: #eef;
-    }
+  .button-group {
+    text-align: center;
+    margin-top: 1rem;
+  }
 
-    .hidden {
-      display: none;
-    }
-  </style>
+  .button-group button {
+    margin: 0.5rem;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+</style>
+
 </head>
 <body>
   <h1>Sudoku Solver</h1>
@@ -112,11 +133,12 @@
     </div>
   </div>
 
-
   <div id="output"></div>
 
   <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid (Warped)</div>
   <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="max-width: 100%; border: 1px solid #ccc; display: none;">
+
+  <div id="reading-msg" class="grid-title" style="display:none;">Reading digits...</div>
 
   <div id="ocr-prompt" class="grid-title" style="display:none;">Please confirm the OCR result:</div>
 
@@ -150,6 +172,10 @@
 
   <div class="grid-title" id="solved-label" style="display:none;">Solved Board</div>
   <table id="solved-board" style="display:none;"></table>
+
+  <div id="restart-container" style="display:none; text-align: center; margin-top: 2rem;">
+    <button id="start-over-btn">Start Over</button>
+  </div>
 
   <script src="script.js"></script>
 </body>
