@@ -2,19 +2,20 @@ import cv2
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+from skimage.segmentation import clear_border
 
 def preprocess_image(path):
     image = cv2.imread(path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (9, 9), 0) # Apply Gaussian blur to reduce noise (can be adjusted)
+    blur = cv2.GaussianBlur(gray, (9, 9), 3) # Apply Gaussian blur to reduce noise (can be adjusted)
     # Apply adaptive thresholding to create a binary image, inverts for better contour detection
     thresh = cv2.adaptiveThreshold( 
         blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV, 11, 2
+        cv2.THRESH_BINARY_INV, 9, 3
     )
     return image, thresh
 
-def preprocess_for_model(cell_img, debug_path=None, margin=0.17):
+def preprocess_for_model(cell_img, debug_path=None, margin=0.08):
     if len(cell_img.shape) == 3:
         gray = cv2.cvtColor(cell_img, cv2.COLOR_BGR2GRAY)
     else:
@@ -25,14 +26,18 @@ def preprocess_for_model(cell_img, debug_path=None, margin=0.17):
     margin_w = int(w * margin)
     cropped = gray[margin_h:h - margin_h, margin_w:w - margin_w]
 
-    inverted = cv2.bitwise_not(cropped)
-    _, thresh = cv2.threshold(inverted, 120, 255, cv2.THRESH_BINARY)
-    coords = cv2.findNonZero(thresh)
+    # Invert so digits are white on black (as expected by MNIST-style models)
+    _, thresh = cv2.threshold(cropped, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+
+    # Clear connected borders
+    thresh_cleared = clear_border(thresh)
+
+    coords = cv2.findNonZero(thresh_cleared)
     if coords is None:
         return np.zeros((1, 28, 28, 1), dtype=np.float32)
 
     x, y, w, h = cv2.boundingRect(coords) # Get bounding box of non-zero regions, helps in cropping
-    digit_crop = thresh[y:y+h, x:x+w]
+    digit_crop = thresh_cleared[y:y+h, x:x+w]
 
     max_dim = max(w, h)
     scale = 20.0 / max_dim
