@@ -14,7 +14,7 @@ def find_sudoku_contour(thresh_img, min_area=1000, aspect_ratio_tol=0.4):
         if area < min_area:
             continue
 
-        approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
+        approx = cv2.approxPolyDP(contour, 0.03 * cv2.arcLength(contour, True), True)
 
         if len(approx) != 4:
             continue  # not a quadrilateral
