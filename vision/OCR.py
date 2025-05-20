@@ -30,7 +30,7 @@ def is_blank(cell_img, threshold=0.01, margin=0.2):
 
     # invert the image for better thresholding
     inverted = cv2.bitwise_not(cropped)
-    _, binary = cv2.threshold(inverted, 150, 255, cv2.THRESH_BINARY)
+    _, binary = cv2.threshold(inverted, 130, 255, cv2.THRESH_BINARY)
     ink_ratio = np.count_nonzero(binary) / binary.size
     return ink_ratio < threshold  # Adjust threshold as needed
 
