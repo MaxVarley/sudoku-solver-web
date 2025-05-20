@@ -44,6 +44,25 @@ const startOverBtn = document.getElementById("start-over-btn");
 
 startOverBtn.onclick = () => location.reload();
 
+// --- UI state management ---
+function showSections(...idsToShow) {
+  // Add manual-corner-btn to the show/hide list for simplicity.
+  const allIds = [
+    'upload-section', 'uploaded-preview', 'submit-container',
+    'warped-label', 'warped-preview', 'ocr-button-group',
+    'ocr-label', 'input-board', 'ocr-confirm-section',
+    'manual-corner-section', 'grid-confirm-section',
+    'ocr-prompt', 'solved-board', 'solved-label',
+    'manual-corner-btn', 'output'
+  ];
+  allIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = idsToShow.includes(id) ? '' : 'none';
+  });
+  document.getElementById('start-over-btn').style.display = idsToShow.includes('upload-section') ? 'none' : '';
+}
+
+
 function showOnly(...idsToShow) {
   const allIds = [
     'upload-section', 'uploaded-preview', 'submit-container',
@@ -101,10 +120,13 @@ fileInput.addEventListener("change", () => {
       uploadedPreview.src = e.target.result;
       uploadedPreview.style.display = "block";
       fileInput.style.display = "none"; // hide after selection
-      showOnly('uploaded-preview', 'submit-container', 'upload-section');
+      showSections('uploaded-preview', 'submit-container', 'upload-section', 'manual-corner-btn');
     };
     reader.readAsDataURL(file);
     outputDiv.innerText = "Image loaded. Click Submit to proceed.";
+    outputDiv.style.display = "";
+    // Always allow manual-corner-btn if image loaded.
+    document.getElementById('manual-corner-btn').style.display = '';
   }
 });
 
@@ -135,22 +157,34 @@ async function handleGridDetection() {
     const detectResult = await detectRes.json();
 
     if (detectResult.warped_url) {
-    warpedPreview.src = detectResult.warped_url + "?" + Date.now();
-    showOnly('warped-label', 'warped-preview', 'ocr-button-group', 'manual-corner-btn', 'restart-container');
-    currentStep = AppState.GRID_CONFIRM;
-  } else {
-    outputDiv.innerText = "Grid not found. You can manually set the corners or upload a new image.";
-    uploadedImage = null;
-    fileInput.value = '';
-    fileInput.style.display = ''; // show file input again
-    showOnly('upload-section', 'submit-container', 'manual-corner-btn', 'output');
-    currentStep = AppState.IMAGE_UPLOAD;
-  }
+      warpedPreview.src = detectResult.warped_url + "?" + Date.now();
+      showSections('warped-label', 'warped-preview', 'ocr-button-group', 'manual-corner-btn', 'restart-container');
+      outputDiv.innerText = "Grid detected. You can run OCR, or manually select corners if needed.";
+      outputDiv.style.display = "";
+      document.getElementById('manual-corner-btn').style.display = '';
+      currentStep = AppState.GRID_CONFIRM;
+    } else {
+      outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image.";
+      outputDiv.style.display = "";
+      // Show the button and upload again
+      uploadedImage = null;
+      fileInput.value = '';
+      fileInput.style.display = '';
+      showSections('upload-section', 'submit-container', 'manual-corner-btn', 'output');
+      document.getElementById('manual-corner-btn').style.display = '';
+      currentStep = AppState.IMAGE_UPLOAD;
+    }
 
   } catch (err) {
     outputDiv.innerText = "Error during grid detection.";
+    outputDiv.style.display = "";
+    // Show manual option anyway, for resilience
+    showSections('upload-section', 'submit-container', 'manual-corner-btn', 'output');
+    document.getElementById('manual-corner-btn').style.display = '';
+    currentStep = AppState.IMAGE_UPLOAD;
   }
 }
+
 
 ocrBtn.addEventListener("click", async () => {
   await handleOCR();
@@ -242,7 +276,10 @@ let draggingIndex = null;
 let uploadedCanvasImage = new Image();
 
 manualCornerBtn.addEventListener("click", () => {
-  showOnly('manual-corner-section');
+  // Show only the manual corner section
+  showSections('manual-corner-section', 'restart-container');
+  outputDiv.innerText = "Drag the red circles to mark the Sudoku corners. Click Submit when done.";
+  outputDiv.style.display = "";
   drawImageOnCanvas();
 });
 
