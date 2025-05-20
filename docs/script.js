@@ -140,7 +140,7 @@ async function handleGridDetection() {
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Grid not found. You can manually set the corners or upload a new image.";
-      showOnly('upload-section', 'uploaded-preview', 'manual-corner-btn', 'restart-container');
+      showOnly('upload-section', 'uploaded-preview', 'manual-corner-btn', 'restart-container', 'output');
     }
   } catch (err) {
     outputDiv.innerText = "Error during grid detection.";
