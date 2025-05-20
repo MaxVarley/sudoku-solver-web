@@ -135,18 +135,18 @@ async function handleGridDetection() {
     const detectResult = await detectRes.json();
 
     if (detectResult.warped_url) {
-      warpedPreview.src = detectResult.warped_url + "?" + Date.now();
-      showOnly('warped-label', 'warped-preview', 'ocr-button-group', 'manual-corner-btn', 'restart-container');
-      currentStep = AppState.GRID_CONFIRM;
-    } else {
-      outputDiv.innerText = "Grid not found. You can manually set the corners or upload a new image.";
-      uploadedImage = null;
-      fileInput.value = '';
-      fileInput.style.display = ''; // show file input again
-      showOnly('upload-section', 'submit-container', 'output');
-      currentStep = AppState.IMAGE_UPLOAD;
+    warpedPreview.src = detectResult.warped_url + "?" + Date.now();
+    showOnly('warped-label', 'warped-preview', 'ocr-button-group', 'manual-corner-btn', 'restart-container');
+    currentStep = AppState.GRID_CONFIRM;
+  } else {
+    outputDiv.innerText = "Grid not found. You can manually set the corners or upload a new image.";
+    uploadedImage = null;
+    fileInput.value = '';
+    fileInput.style.display = ''; // show file input again
+    showOnly('upload-section', 'submit-container', 'manual-corner-btn', 'output');
+    currentStep = AppState.IMAGE_UPLOAD;
+  }
 
-    }
   } catch (err) {
     outputDiv.innerText = "Error during grid detection.";
   }
