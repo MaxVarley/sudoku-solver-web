@@ -5,8 +5,6 @@
   <title>Sudoku Solver</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
   <style>
@@ -47,16 +45,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    #upload-section {
-      text-align: center;
-    }
-
-    #submit-container {
-      display: flex;
-      justify-content: center;
-      margin-top: 1rem;
-    }
-
     .main-button {
       display: inline-block;
       padding: 0.6rem 1.2rem;
@@ -76,20 +64,26 @@
       transform: translateY(-1px);
     }
 
-    #uploaded-preview {
-      display: block;
-      max-width: 100%;
-      margin: 1rem auto;
-      border: 2px dashed #aaa;
-      padding: 0.5rem;
+    .button-group {
+      text-align: center;
+      margin-top: 1rem;
     }
 
-    #output {
-      font-weight: 600;
-      text-align: center;
-      margin: 1rem 0;
-      white-space: pre-line;
-      color: #333;
+    .button-group button {
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      background: #0077cc;
+      color: white;
+      cursor: pointer;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .button-group button:hover {
+      box-shadow: 0 0 8px #0077cc88;
+      transform: translateY(-1px);
     }
 
     .grid-title {
@@ -154,28 +148,6 @@
       background-color: #eef;
     }
 
-    .button-group {
-      text-align: center;
-      margin-top: 1rem;
-    }
-
-    .button-group button {
-      margin: 0.5rem;
-      padding: 0.5rem 1rem;
-      font-weight: bold;
-      border: none;
-      border-radius: 4px;
-      background: #0077cc;
-      color: white;
-      cursor: pointer;
-      transition: box-shadow 0.2s ease, transform 0.2s ease;
-    }
-
-    .button-group button:hover {
-      box-shadow: 0 0 8px #0077cc88;
-      transform: translateY(-1px);
-    }
-
     .hidden {
       display: none;
     }
@@ -225,7 +197,6 @@
     #github-link:hover {
       background-color: #0366d6;
     }
-
   </style>
 </head>
 
@@ -235,9 +206,9 @@
     View Code on GitHub
   </a>
 
-
   <h1>Sudoku Solver</h1>
 
+  <!-- Upload Stage -->
   <div id="upload-section" class="card fade-in">
     <input type="file" id="upload" accept="image/*"><br>
     <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
@@ -246,22 +217,30 @@
     </div>
   </div>
 
-  <div id="output"></div>
-
+  <!-- Grid Detection Output -->
   <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid (Warped)</div>
-  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="display: none;">
+  <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="display:none;">
 
-  <div id="reading-msg" class="grid-title hidden">Reading digits...</div>
-
-  <div id="ocr-prompt" class="grid-title" style="display:none;">Please confirm the OCR result:</div>
-
-  <div id="grid-confirm-section" class="button-group" style="display:none;">
-    <p>Is this the correct grid?</p>
-    <button id="confirm-grid" class="main-button">Yes</button>
-    <button id="manual-from-confirm" class="main-button">Manually Set Corners</button>
-    <button id="retry-grid" class="main-button">Upload New Image</button>
+  <!-- OCR Button -->
+  <div class="button-group" id="ocr-button-group" style="display: none;">
+    <button id="ocr-btn" class="main-button">Run OCR</button>
   </div>
 
+  <!-- OCR Section -->
+  <div id="reading-msg" class="grid-title hidden">Reading digits...</div>
+  <div class="grid-title" id="ocr-label" style="display:none;">OCR Input</div>
+  <table id="input-board"></table>
+
+  <!-- OCR Confirmation -->
+  <div id="ocr-prompt" class="grid-title" style="display:none;">Please confirm the OCR result:</div>
+  <div id="ocr-confirm-section" class="button-group" style="display:none;">
+    <p>Is this the correct OCR result?</p>
+    <button id="confirm-ocr" class="main-button">Yes</button>
+    <button id="manual-input-btn" class="main-button">Enter Numbers Manually</button>
+    <button id="retry-ocr" class="main-button">Upload New Image</button>
+  </div>
+
+  <!-- Manual Corner Setting -->
   <div id="manual-corner-section" class="card" style="text-align:center; display:none;">
     <p>Adjust the red corners to outline the Sudoku grid:</p>
     <canvas id="corner-canvas" width="450" height="450" style="border: 1px solid #aaa; touch-action: none;"></canvas>
@@ -273,23 +252,22 @@
 
   <button id="manual-corner-btn" class="main-button" style="display:none;">Enter Corners Manually</button>
 
-  <div class="grid-title" id="ocr-label" style="display:none;">OCR Input</div>
-  <table id="input-board"></table>
-
-  <div id="ocr-confirm-section" class="button-group" style="display:none;">
-    <p>Is this the correct OCR result?</p>
-    <button id="confirm-ocr" class="main-button">Yes</button>
-    <button id="manual-input-btn" class="main-button">Enter Numbers Manually</button>
-    <button id="retry-ocr" class="main-button">Upload New Image</button>
+  <!-- Grid Confirmation (if warped failed) -->
+  <div id="grid-confirm-section" class="button-group" style="display:none;">
+    <p>Was the grid detected correctly?</p>
+    <button id="confirm-grid" class="main-button">Yes</button>
+    <button id="manual-from-confirm" class="main-button">Manually Set Corners</button>
+    <button id="retry-grid" class="main-button">Upload New Image</button>
   </div>
 
+  <!-- Solved Output -->
   <div class="grid-title" id="solved-label" style="display:none;">Solved Board</div>
   <table id="solved-board" style="display:none;"></table>
 
-  <div id="restart-container" style="text-align: center; margin-top: 2rem;">
-    <button id="start-over-btn" class="main-button" style="display: none;">Start Over</button>
+  <!-- Always-Available Restart -->
+  <div id="restart-container">
+    <button id="start-over-btn" class="main-button" style="display:none;">Start Over</button>
   </div>
-
 
   <script src="script.js"></script>
 </body>
