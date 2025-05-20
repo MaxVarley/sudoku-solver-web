@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-def find_sudoku_contour(thresh_img, min_area=1000, aspect_ratio_tol=0.5):
+def find_sudoku_contour(thresh_img, min_area=2000, aspect_ratio_tol=0.4):
     """
     Find the best candidate contour for the Sudoku board.
     Returns a 4-point polygon (approx) if successful, or raises an error.
