@@ -201,14 +201,10 @@
 </head>
 
 <body>
-
-  <a id="github-link" href="https://github.com/MaxVarley/sudoku-solver-web" target="_blank">
-    View Code on GitHub
-  </a>
-
+  <a id="github-link" href="https://github.com/MaxVarley/sudoku-solver-web" target="_blank">View Code on GitHub</a>
   <h1>Sudoku Solver</h1>
 
-  <!-- Upload Stage -->
+  <!-- Upload Section -->
   <div id="upload-section" class="card fade-in">
     <input type="file" id="upload" accept="image/*"><br>
     <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
@@ -217,16 +213,16 @@
     </div>
   </div>
 
-  <!-- Grid Detection Output -->
+  <!-- Grid Detection Result -->
   <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid (Warped)</div>
   <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="display:none;">
 
-  <!-- OCR Button -->
+  <!-- OCR Trigger -->
   <div class="button-group" id="ocr-button-group" style="display: none;">
     <button id="ocr-btn" class="main-button">Run OCR</button>
   </div>
 
-  <!-- OCR Section -->
+  <!-- OCR Processing -->
   <div id="reading-msg" class="grid-title hidden">Reading digits...</div>
   <div class="grid-title" id="ocr-label" style="display:none;">OCR Input</div>
   <table id="input-board"></table>
@@ -240,7 +236,7 @@
     <button id="retry-ocr" class="main-button">Upload New Image</button>
   </div>
 
-  <!-- Manual Corner Setting -->
+  <!-- Manual Corners -->
   <div id="manual-corner-section" class="card" style="text-align:center; display:none;">
     <p>Adjust the red corners to outline the Sudoku grid:</p>
     <canvas id="corner-canvas" width="450" height="450" style="border: 1px solid #aaa; touch-action: none;"></canvas>
@@ -252,7 +248,7 @@
 
   <button id="manual-corner-btn" class="main-button" style="display:none;">Enter Corners Manually</button>
 
-  <!-- Grid Confirmation (if warped failed) -->
+  <!-- Grid Confirmation -->
   <div id="grid-confirm-section" class="button-group" style="display:none;">
     <p>Was the grid detected correctly?</p>
     <button id="confirm-grid" class="main-button">Yes</button>
@@ -260,11 +256,11 @@
     <button id="retry-grid" class="main-button">Upload New Image</button>
   </div>
 
-  <!-- Solved Output -->
+  <!-- Solved Board -->
   <div class="grid-title" id="solved-label" style="display:none;">Solved Board</div>
   <table id="solved-board" style="display:none;"></table>
 
-  <!-- Always-Available Restart -->
+  <!-- Restart -->
   <div id="restart-container">
     <button id="start-over-btn" class="main-button" style="display:none;">Start Over</button>
   </div>

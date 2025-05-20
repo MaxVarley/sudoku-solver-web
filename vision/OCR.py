@@ -15,24 +15,45 @@ def get_model():
     return _model
 
 
-def is_blank(cell_img, threshold=0.01, margin=0.2):
+def is_blank(cell_img, area_thresh=0.03, margin=0.1):
     if not isinstance(cell_img, np.ndarray):
         return True
-    if len(cell_img.shape) == 3:
-        gray = cv2.cvtColor(cell_img, cv2.COLOR_BGR2GRAY)
-    else:
-        gray = cell_img
+
+    # Convert to grayscale if needed
+    gray = cv2.cvtColor(cell_img, cv2.COLOR_BGR2GRAY) if len(cell_img.shape) == 3 else cell_img
 
     h, w = gray.shape
-
-    # crop the image to reduce bordering artifacts
     cropped = gray[int(h * margin):int(h * (1 - margin)), int(w * margin):int(w * (1 - margin))]
 
-    # invert the image for better thresholding
+    # Invert and threshold
     inverted = cv2.bitwise_not(cropped)
-    _, binary = cv2.threshold(inverted, 180, 255, cv2.THRESH_BINARY)
-    ink_ratio = np.count_nonzero(binary) / binary.size
-    return ink_ratio < threshold  # Adjust threshold as needed
+    thresh = cv2.threshold(inverted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
+    # Find contours
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) == 0:
+        return True
+
+    h_thresh, w_thresh = thresh.shape
+    valid_contours = []
+
+    for cnt in contours:
+        x, y, w_cnt, h_cnt = cv2.boundingRect(cnt)
+        if x <= 1 or y <= 1 or x + w_cnt >= w_thresh - 1 or y + h_cnt >= h_thresh - 1:
+            continue  # Skip edge-touching contours
+        valid_contours.append(cnt)
+
+    if len(valid_contours) == 0:
+        return True
+
+    # Take largest valid contour
+    cnt = max(valid_contours, key=cv2.contourArea)
+    mask = np.zeros(thresh.shape, dtype='uint8')
+    cv2.drawContours(mask, [cnt], -1, 255, -1)
+    percent_filled = cv2.countNonZero(mask) / float(mask.size)
+
+    return percent_filled < area_thresh
+
 
 
 def recognize_cells(cell_imgs):

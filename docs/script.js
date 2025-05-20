@@ -29,6 +29,7 @@ const retryOCRBtn = document.getElementById("retry-ocr");
 const manualCornerBtn = document.getElementById("manual-corner-btn");
 const manualFromConfirmBtn = document.getElementById("manual-from-confirm");
 const manualInputBtn = document.getElementById("manual-input-btn");
+const ocrBtn = document.getElementById("ocr-btn");
 
 const gridConfirmSection = document.getElementById("grid-confirm-section");
 const ocrConfirmSection = document.getElementById("ocr-confirm-section");
@@ -43,9 +44,22 @@ const startOverBtn = document.getElementById("start-over-btn");
 
 startOverBtn.onclick = () => location.reload();
 
-let cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
-let draggingIndex = null;
-let uploadedCanvasImage = new Image();
+function showOnly(...idsToShow) {
+  const allIds = [
+    'upload-section', 'uploaded-preview', 'submit-container',
+    'warped-label', 'warped-preview', 'ocr-button-group',
+    'ocr-label', 'input-board', 'ocr-confirm-section',
+    'manual-corner-section', 'grid-confirm-section',
+    'ocr-prompt', 'solved-board', 'solved-label'
+  ];
+
+  allIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = idsToShow.includes(id) ? '' : 'none';
+  });
+
+  document.getElementById('start-over-btn').style.display = idsToShow.includes('upload-section') ? 'none' : '';
+}
 
 function renderBoard(data, tableId, editable = false) {
   const table = document.getElementById(tableId);
@@ -66,12 +80,6 @@ function renderBoard(data, tableId, editable = false) {
           input.value = /^[1-9]$/.test(val) ? val : '';
           data[row][col] = val === '' ? 0 : parseInt(val);
         });
-        input.style.width = '28px';
-        input.style.height = '28px';
-        input.style.textAlign = 'center';
-        input.style.border = 'none';
-        input.style.fontSize = '18px';
-
         td.appendChild(input);
       } else {
         td.textContent = data[row][col] === 0 ? '' : data[row][col];
@@ -83,6 +91,7 @@ function renderBoard(data, tableId, editable = false) {
   }
 }
 
+
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   if (file) {
@@ -91,35 +100,19 @@ fileInput.addEventListener("change", () => {
     reader.onload = e => {
       uploadedPreview.src = e.target.result;
       uploadedPreview.style.display = "block";
-      submitBtn.style.display = "block";
-      fileInput.style.display = "none";
+      fileInput.style.display = "none"; // hide after selection
+      showOnly('uploaded-preview', 'submit-container', 'upload-section');
     };
     reader.readAsDataURL(file);
     outputDiv.innerText = "Image loaded. Click Submit to proceed.";
-    resetAll();
   }
 });
-
-function resetAll() {
-  gridConfirmSection.style.display = "none";
-  ocrConfirmSection.style.display = "none";
-  inputBoard.style.display = "none";
-  ocrLabel.style.display = "none";
-  solvedBoard.style.display = "none";
-  solvedLabel.style.display = "none";
-  warpedPreview.style.display = "none";
-  warpedLabel.style.display = "none";
-  manualCornerBtn.style.display = "none";
-  document.getElementById("manual-corner-section").style.display = "none";
-  document.getElementById("ocr-prompt").style.display = "none";
-  restartContainer.style.display = "none";
-}
 
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) return alert("Please upload an image first.");
   switch (currentStep) {
     case AppState.IMAGE_UPLOAD: await handleGridDetection(); break;
-    case AppState.GRID_CONFIRM: await handleOCRConfirmation(); break;
+    case AppState.GRID_CONFIRM: showOnly(); await handleOCR(); break;
     case AppState.OCR_CONFIRM: await handleSolveVisual(inputGrid); break;
   }
 });
@@ -143,10 +136,7 @@ async function handleGridDetection() {
 
     if (detectResult.warped_url) {
       warpedPreview.src = detectResult.warped_url + "?" + Date.now();
-      warpedPreview.style.display = "block";
-      warpedLabel.style.display = "block";
-      gridConfirmSection.style.display = "block";
-      outputDiv.innerText = "";
+      showOnly('warped-label', 'warped-preview', 'ocr-button-group');
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Grid not found. Try again or enter corners manually.";
@@ -157,18 +147,14 @@ async function handleGridDetection() {
   }
 }
 
-confirmGridBtn.addEventListener("click", async () => {
-  gridConfirmSection.style.display = "none";
-  outputDiv.innerText = "";
+ocrBtn.addEventListener("click", async () => {
+  await handleOCR();
+});
 
-  const readingDiv = document.createElement("div");
-  readingDiv.id = "reading-msg";
-  readingDiv.className = "grid-title";
-  readingDiv.innerText = "Reading digits...";
-  warpedPreview.insertAdjacentElement("afterend", readingDiv);
-
+async function handleOCR() {
   const formData = new FormData();
   formData.append("session_id", sessionId);
+  document.getElementById('reading-msg').classList.remove('hidden');
 
   try {
     const ocrRes = await fetch("/ocr", { method: "POST", body: formData });
@@ -177,34 +163,38 @@ confirmGridBtn.addEventListener("click", async () => {
     if (result.input) {
       inputGrid = result.input;
       renderBoard(inputGrid, "input-board", true);
-      inputBoard.style.display = "table";
-      ocrLabel.style.display = "block";
-      ocrConfirmSection.style.display = "block";
-      document.getElementById("ocr-prompt").style.display = "block";
-      readingDiv.remove();
+      showOnly('warped-label', 'warped-preview', 'ocr-label', 'input-board', 'ocr-confirm-section', 'ocr-prompt');
+      document.getElementById("reading-msg").classList.add("hidden");
       currentStep = AppState.OCR_CONFIRM;
     } else {
       outputDiv.innerText = "OCR failed.";
-      restartContainer.style.display = "block";
     }
   } catch (err) {
     outputDiv.innerText = "Error during OCR.";
-    restartContainer.style.display = "block";
   }
-});
+}
 
 confirmOCRBtn.addEventListener("click", () => {
-  ocrConfirmSection.style.display = "none";
-  inputBoard.style.display = "none";
-  document.getElementById("ocr-prompt").style.display = "none";
-  const readingEl = document.getElementById("reading-msg");
-  if (readingEl) readingEl.remove();
+  showOnly();
   currentStep = AppState.VISUAL_SOLVE;
   handleSolveVisual(inputGrid);
 });
 
-retryGridBtn.addEventListener("click", resetAll);
-retryOCRBtn.addEventListener("click", resetAll);
+retryGridBtn.addEventListener("click", resetToUpload);
+retryOCRBtn.addEventListener("click", resetToUpload);
+
+function resetToUpload() {
+  uploadedImage = null;
+  sessionId = null;
+  fileInput.value = '';
+  uploadedPreview.src = '';
+  warpedPreview.src = '';
+  inputBoard.innerHTML = '';
+  solvedBoard.innerHTML = '';
+  fileInput.style.display = '';
+  showOnly('upload-section', 'submit-container', 'upload');
+  outputDiv.innerText = '';
+}
 
 manualInputBtn.addEventListener("click", () => {
   renderBoard(inputGrid, "input-board", true);
@@ -227,15 +217,8 @@ async function handleSolveVisual(grid) {
 
   const finalBoard = result.finalBoard;
   const board = grid.map(row => [...row]);
-  solvedLabel.style.display = "block";
-  solvedBoard.style.display = "table";
+  showOnly('solved-label', 'solved-board');
 
-  // Wait a tick for DOM to render, then scroll
-  requestAnimationFrame(() => {
-    solvedLabel.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-
-  // Animate solution
   const delay = ms => new Promise(res => setTimeout(res, ms));
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
@@ -246,26 +229,20 @@ async function handleSolveVisual(grid) {
       }
     }
   }
-
-  // Show success message and start over
-  const solvedMsg = document.createElement("div");
-  solvedMsg.className = "grid-title";
-  solvedMsg.innerText = "Sudoku Solved!";
-  solvedBoard.insertAdjacentElement("afterend", solvedMsg);
-
-  document.getElementById("restart-container").style.display = "block";
 }
 
+// ----- Manual Corners -----
+let cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
+let draggingIndex = null;
+let uploadedCanvasImage = new Image();
 
-// Manual Corners
 manualCornerBtn.addEventListener("click", () => {
-  document.getElementById("manual-corner-section").style.display = "block";
+  showOnly('manual-corner-section');
   drawImageOnCanvas();
 });
 
 manualFromConfirmBtn.addEventListener("click", () => {
-  gridConfirmSection.style.display = "none";
-  document.getElementById("manual-corner-section").style.display = "block";
+  showOnly('manual-corner-section');
   drawImageOnCanvas();
 });
 
@@ -341,18 +318,13 @@ submitCornersBtn.addEventListener("click", async () => {
     const result = await response.json();
     if (result.warped_url) {
       warpedPreview.src = result.warped_url + "?" + Date.now();
-      warpedPreview.style.display = "block";
-      warpedLabel.style.display = "block";
-      gridConfirmSection.style.display = "block";
-      document.getElementById("manual-corner-section").style.display = "none";
-      outputDiv.innerText = "Warp successful. Please confirm.";
+      showOnly('warped-label', 'warped-preview', 'ocr-button-group');
+      outputDiv.innerText = "Warp successful. Please proceed with OCR.";
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Manual warp failed.";
-      restartContainer.style.display = "block";
     }
   } catch (err) {
     outputDiv.innerText = "Error sending manual corners.";
-    restartContainer.style.display = "block";
   }
 });
