@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-import os
 import tensorflow as tf
+from skimage.segmentation import clear_border
 
 from vision.preprocessing import preprocess_for_model
 
@@ -15,7 +15,7 @@ def get_model():
     return _model
 
 
-def is_blank(cell_img, area_thresh=0.03, margin=0.1):
+def is_blank(cell_img, area_thresh=0.02, margin=0.1):
     if not isinstance(cell_img, np.ndarray):
         return True
 
@@ -29,12 +29,14 @@ def is_blank(cell_img, area_thresh=0.03, margin=0.1):
     inverted = cv2.bitwise_not(cropped)
     thresh = cv2.threshold(inverted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
+    thresh_cleared = clear_border(thresh)
+
     # Find contours
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(thresh_cleared, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) == 0:
         return True
 
-    h_thresh, w_thresh = thresh.shape
+    h_thresh, w_thresh = thresh_cleared.shape
     valid_contours = []
 
     for cnt in contours:
@@ -48,7 +50,7 @@ def is_blank(cell_img, area_thresh=0.03, margin=0.1):
 
     # Take largest valid contour
     cnt = max(valid_contours, key=cv2.contourArea)
-    mask = np.zeros(thresh.shape, dtype='uint8')
+    mask = np.zeros(thresh_cleared.shape, dtype='uint8')
     cv2.drawContours(mask, [cnt], -1, 255, -1)
     percent_filled = cv2.countNonZero(mask) / float(mask.size)
 

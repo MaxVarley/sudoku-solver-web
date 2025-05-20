@@ -136,11 +136,11 @@ async function handleGridDetection() {
 
     if (detectResult.warped_url) {
       warpedPreview.src = detectResult.warped_url + "?" + Date.now();
-      showOnly('warped-label', 'warped-preview', 'ocr-button-group');
+      showOnly('warped-label', 'warped-preview', 'ocr-button-group', 'manual-corner-btn', 'restart-container');
       currentStep = AppState.GRID_CONFIRM;
     } else {
-      outputDiv.innerText = "Grid not found. Try again or enter corners manually.";
-      manualCornerBtn.style.display = "inline-block";
+      outputDiv.innerText = "Grid not found. You can manually set the corners or upload a new image.";
+      showOnly('upload-section', 'uploaded-preview', 'manual-corner-btn', 'restart-container');
     }
   } catch (err) {
     outputDiv.innerText = "Error during grid detection.";
