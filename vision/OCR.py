@@ -15,7 +15,7 @@ def get_model():
     return _model
 
 
-def is_blank(cell_img, area_thresh=0.02, margin=0.1):
+def is_blank(cell_img, area_thresh=0.02, margin=0.2):
     if not isinstance(cell_img, np.ndarray):
         return True
 
