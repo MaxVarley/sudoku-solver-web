@@ -41,7 +41,7 @@ def is_blank(cell_img, area_thresh=0.01, margin=0.1):
 
     for cnt in contours:
         x, y, w_cnt, h_cnt = cv2.boundingRect(cnt)
-        if x <= 1 or y <= 1 or x + w_cnt >= w_thresh - 1 or y + h_cnt >= h_thresh - 1:
+        if x <= 5 or y <= 5 or x + w_cnt >= w_thresh - 5 or y + h_cnt >= h_thresh - 5:
             continue  # Skip edge-touching contours
         valid_contours.append(cnt)
 
