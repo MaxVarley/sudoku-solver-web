@@ -223,9 +223,8 @@
     </div>
   </div>
 
-
   <!-- Grid Detection Result -->
-  <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid (Warped)</div>
+  <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid</div>
   <img id="warped-preview" src="" alt="Warped Sudoku Grid Preview" style="display:none;">
 
   <!-- OCR Trigger -->
@@ -239,11 +238,10 @@
   <table id="input-board"></table>
 
   <!-- OCR Confirmation -->
-  <div id="ocr-prompt" class="grid-title" style="display:none;">Please confirm the OCR result:</div>
+  <div id="ocr-prompt" class="grid-title" style="display:none;">Confirm OCR Result:</div>
   <div id="ocr-confirm-section" class="button-group" style="display:none;">
-    <p>Is this the correct OCR result?</p>
-    <button id="confirm-ocr" class="main-button">Yes</button>
-    <button id="manual-input-btn" class="main-button">Enter Numbers Manually</button>
+    <p>Something wrong? You can manually edit the grid, or upload a new image, if needed.</p>
+    <button id="confirm-ocr" class="main-button">Solve Sudoku!</button>
     <button id="retry-ocr" class="main-button">Upload New Image</button>
   </div>
 
@@ -256,9 +254,7 @@
       <button id="submit-corners" class="main-button">Submit Corners</button>
     </div>
   </div>
-
-  <button id="manual-corner-btn" class="main-button" style="display:none;">Enter Corners Manually</button>
-
+  
   <!-- Grid Confirmation -->
   <div id="grid-confirm-section" class="button-group" style="display:none;">
     <p>Was the grid detected correctly?</p>

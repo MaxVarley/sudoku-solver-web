@@ -249,10 +249,13 @@ async function handleSolveVisual(grid) {
 
   const result = await res.json();
   if (!result.success || !result.finalBoard) {
-    outputDiv.innerText = "Could not solve this puzzle.";
+    outputDiv.innerText = "This Sudoku puzzle is unsolvable, or the digits were not recognised correctly.";
     document.getElementById("restart-container").style.display = "block";
     return;
   }
+
+  outputDiv.innerText = "Sudoku solved!";
+  outputDiv.style.display = ""; 
 
   const finalBoard = result.finalBoard;
   const board = grid.map(row => [...row]);
@@ -270,7 +273,7 @@ async function handleSolveVisual(grid) {
   }
 }
 
-// ----- Manual Corners -----
+// Manual Corners
 let cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
 let draggingIndex = null;
 let uploadedCanvasImage = new Image();
