@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
 
-def find_sudoku_contour(thresh_img, min_area=2000, max_side_ratio=1.7):
+def find_sudoku_contour(thresh_img, min_area=2000, aspect_ratio_tol=0.1):
     """
     Find the best candidate contour for the Sudoku board.
     Returns a 4-point polygon (approx) if successful, or raises an error.
     """
-    import numpy as np
     contours, _ = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     best_candidate = None
 
@@ -15,16 +14,15 @@ def find_sudoku_contour(thresh_img, min_area=2000, max_side_ratio=1.7):
         if area < min_area:
             continue
 
-        approx = cv2.approxPolyDP(contour, 0.04 * cv2.arcLength(contour, True), True)
+        approx = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
+
         if len(approx) != 4:
             continue  # not a quadrilateral
 
-        # Compute side lengths
-        pts = approx.reshape(4, 2)
-        sides = [np.linalg.norm(pts[i] - pts[(i+1)%4]) for i in range(4)]
-        side_ratio = max(sides) / min(sides)
-        if side_ratio > max_side_ratio:
-            continue  # too skewed
+        x, y, w, h = cv2.boundingRect(approx)
+        aspect_ratio = w / float(h)
+        if abs(aspect_ratio - 1.0) > aspect_ratio_tol:
+            continue  # not square enough
 
         best_candidate = approx
         break
@@ -33,7 +31,6 @@ def find_sudoku_contour(thresh_img, min_area=2000, max_side_ratio=1.7):
         raise ValueError("No suitable Sudoku contour found.")
 
     return best_candidate
-
 
 
 def get_perspective_transform(image, contour):

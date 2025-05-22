@@ -48,14 +48,14 @@ startOverBtn.onclick = () => location.reload();
 
 // --- UI state management ---
 function showSections(...idsToShow) {
-  // Add manual-corner-btn to the show/hide list for simplicity.
   const allIds = [
     'upload-section', 'uploaded-preview', 'submit-container',
     'warped-label', 'warped-preview', 'ocr-button-group',
     'ocr-label', 'input-board', 'ocr-confirm-section',
     'manual-corner-section', 'grid-confirm-section',
     'ocr-prompt', 'solved-board', 'solved-label',
-    'manual-corner-btn-container', 'output'
+    'manual-corner-btn-container', // <-- add this here
+    'output'
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -71,14 +71,13 @@ function showOnly(...idsToShow) {
     'warped-label', 'warped-preview', 'ocr-button-group',
     'ocr-label', 'input-board', 'ocr-confirm-section',
     'manual-corner-section', 'grid-confirm-section',
-    'ocr-prompt', 'solved-board', 'solved-label'
+    'ocr-prompt', 'solved-board', 'solved-label',
+    'manual-corner-btn-container' // <-- add this here too
   ];
-
   allIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = idsToShow.includes(id) ? '' : 'none';
   });
-
   document.getElementById('start-over-btn').style.display = idsToShow.includes('upload-section') ? 'none' : '';
 }
 
@@ -239,6 +238,7 @@ function resetToUpload() {
   solvedBoard.innerHTML = '';
   fileInput.style.display = '';
   showOnly('upload-section', 'submit-container', 'upload');
+  document.getElementById('manual-corner-btn-container').style.display = 'none';
   outputDiv.innerText = '';
 }
 
@@ -267,6 +267,8 @@ async function handleSolveVisual(grid) {
   const finalBoard = result.finalBoard;
   const board = grid.map(row => [...row]);
   showOnly('solved-label', 'solved-board');
+  document.getElementById('manual-corner-btn-container').style.display = 'none';
+
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
   for (let row = 0; row < 9; row++) {
