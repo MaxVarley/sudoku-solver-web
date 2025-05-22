@@ -42,11 +42,22 @@ const submitCornersBtn = document.getElementById("submit-corners");
 const restartContainer = document.getElementById("restart-container");
 const startOverBtn = document.getElementById("start-over-btn");
 
+// Example Images
+const exampleImagesDiv = document.getElementById("example-images");
+const exampleImgs = document.querySelectorAll(".example-img");
+
+// Hide manual corner button initially
 document.getElementById('manual-corner-btn-container').style.display = 'none';
 
-startOverBtn.onclick = () => location.reload();
+// --- Example Images Show/Hide ---
+function showExampleImages() {
+  exampleImagesDiv.style.display = "flex";
+}
+function hideExampleImages() {
+  exampleImagesDiv.style.display = "none";
+}
 
-// --- UI state management ---
+// --- UI State Management ---
 function showSections(...idsToShow) {
   const allIds = [
     'upload-section', 'uploaded-preview', 'submit-container',
@@ -54,7 +65,7 @@ function showSections(...idsToShow) {
     'ocr-label', 'input-board', 'ocr-confirm-section',
     'manual-corner-section', 'grid-confirm-section',
     'ocr-prompt', 'solved-board', 'solved-label',
-    'manual-corner-btn-container', // <-- add this here
+    'manual-corner-btn-container',
     'output'
   ];
   allIds.forEach(id => {
@@ -64,7 +75,6 @@ function showSections(...idsToShow) {
   document.getElementById('start-over-btn').style.display = idsToShow.includes('upload-section') ? 'none' : '';
 }
 
-
 function showOnly(...idsToShow) {
   const allIds = [
     'upload-section', 'uploaded-preview', 'submit-container',
@@ -72,7 +82,7 @@ function showOnly(...idsToShow) {
     'ocr-label', 'input-board', 'ocr-confirm-section',
     'manual-corner-section', 'grid-confirm-section',
     'ocr-prompt', 'solved-board', 'solved-label',
-    'manual-corner-btn-container' // <-- add this here too
+    'manual-corner-btn-container'
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -111,8 +121,48 @@ function renderBoard(data, tableId, editable = false) {
   }
 }
 
+// --- Example Image Selection ---
+function selectExampleImage(imgPath) {
+  hideExampleImages();
 
+  // Fetch the image as a Blob so we can mimic a File upload
+  fetch(imgPath)
+    .then(res => res.blob())
+    .then(blob => {
+      const file = new File([blob], imgPath.split('/').pop(), { type: blob.type });
+      uploadedImage = file;
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = e => {
+        uploadedPreview.src = e.target.result;
+        uploadedPreview.style.display = "block";
+        fileInput.style.display = "none";
+        showSections('uploaded-preview', 'submit-container', 'upload-section');
+      };
+      reader.readAsDataURL(file);
+
+      outputDiv.innerText = "Image loaded. Click Submit to proceed.";
+      outputDiv.style.display = "";
+    });
+}
+
+// --- Startup: Set up Example Image Clicks ---
+document.addEventListener("DOMContentLoaded", () => {
+  showExampleImages();
+  exampleImgs.forEach(img => {
+    img.addEventListener("click", () => {
+      selectExampleImage(img.dataset.path);
+    });
+  });
+});
+
+// --- Start Over Button ---
+startOverBtn.onclick = () => location.reload();
+
+// --- File Upload Handler ---
 fileInput.addEventListener("change", () => {
+  hideExampleImages();
   const file = fileInput.files[0];
   if (file) {
     uploadedImage = file;
@@ -190,8 +240,6 @@ async function handleGridDetection() {
   }
 }
 
-
-
 ocrBtn.addEventListener("click", async () => {
   await handleOCR();
 });
@@ -211,7 +259,7 @@ async function handleOCR() {
       showOnly('warped-label', 'warped-preview', 'ocr-label', 'input-board', 'ocr-confirm-section', 'ocr-prompt');
       document.getElementById("reading-msg").classList.add("hidden");
       currentStep = AppState.OCR_CONFIRM;
-      document.getElementById('manual-corner-btn-container').style.display = 'none'; // <--- ADD THIS HERE
+      document.getElementById('manual-corner-btn-container').style.display = 'none';
     } else {
       outputDiv.innerText = "OCR failed.";
     }
@@ -242,6 +290,7 @@ function resetToUpload() {
   showOnly('upload-section', 'submit-container', 'upload');
   document.getElementById('manual-corner-btn-container').style.display = 'none';
   outputDiv.innerText = '';
+  showExampleImages(); // <-- Show example images again
 }
 
 manualInputBtn.addEventListener("click", () => {
@@ -271,7 +320,6 @@ async function handleSolveVisual(grid) {
   showOnly('solved-label', 'solved-board');
   document.getElementById('manual-corner-btn-container').style.display = 'none';
 
-
   const delay = ms => new Promise(res => setTimeout(res, ms));
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
@@ -290,7 +338,6 @@ let draggingIndex = null;
 let uploadedCanvasImage = new Image();
 
 manualCornerBtn.addEventListener("click", () => {
-  // Show only the manual corner section
   showSections('manual-corner-section', 'restart-container');
   outputDiv.innerText = "Drag the red circles to mark the Sudoku corners. Click Submit when done.";
   outputDiv.style.display = "";
@@ -377,7 +424,7 @@ submitCornersBtn.addEventListener("click", async () => {
       showOnly('warped-label', 'warped-preview', 'ocr-button-group');
       outputDiv.innerText = "Warp successful. Please proceed with OCR.";
       currentStep = AppState.GRID_CONFIRM;
-      document.getElementById('manual-corner-btn-container').style.display = ''; // <--- ADD THIS HERE
+      document.getElementById('manual-corner-btn-container').style.display = '';
     } else {
       outputDiv.innerText = "Manual warp failed.";
     }
