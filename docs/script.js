@@ -406,6 +406,11 @@ manualFromConfirmBtn.addEventListener("click", () => {
 });
 
 function drawImageOnCanvas() {
+  // Set canvas size based on device width
+  const maxDim = Math.min(450, Math.round(window.innerWidth * 0.9));
+  canvas.width = maxDim;
+  canvas.height = maxDim;
+
   uploadedCanvasImage.onload = drawCanvas;
   uploadedCanvasImage.src = uploadedPreview.src;
 }
@@ -414,7 +419,7 @@ function drawCanvas() {
   canvas.width = uploadedCanvasImage.width;
   canvas.height = uploadedCanvasImage.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(uploadedCanvasImage, 0, 0);
+  ctx.drawImage(uploadedCanvasImage, 0, 0, canvas.width, canvas.height);
 
   ctx.strokeStyle = "red";
   ctx.lineWidth = 2;
@@ -457,7 +462,7 @@ canvas.addEventListener("mouseup", () => draggingIndex = null);
 canvas.addEventListener("mouseleave", () => draggingIndex = null);
 
 resetCornersBtn.addEventListener("click", () => {
-  cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
+  cornerPoints = [[10, 10], [100, 10], [100, 100], [10, 100]];
   drawCanvas();
 });
 
