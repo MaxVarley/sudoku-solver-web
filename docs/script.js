@@ -134,28 +134,31 @@ function renderBoard(data, tableId, editable = false) {
 function selectExampleImage(imgPath) {
   hideIntroText();
   hideExampleImages();
-
-  // Fetch the image as a Blob so we can mimic a File upload
   fetch(imgPath)
     .then(res => res.blob())
     .then(blob => {
       const file = new File([blob], imgPath.split('/').pop(), { type: blob.type });
-      uploadedImage = file;
-
-      // Show preview
       const reader = new FileReader();
       reader.onload = e => {
-        uploadedPreview.src = e.target.result;
-        uploadedPreview.style.display = "block";
-        fileInput.style.display = "none";
-        showSections('uploaded-preview', 'submit-container', 'upload-section');
+        resizeImage(e.target.result, (finalFile) => {
+          uploadedImage = finalFile;
+          // Preview
+          const previewReader = new FileReader();
+          previewReader.onload = ev => {
+            uploadedPreview.src = ev.target.result;
+            uploadedPreview.style.display = "block";
+            fileInput.style.display = "none";
+            showSections('uploaded-preview', 'submit-container', 'upload-section');
+          };
+          previewReader.readAsDataURL(finalFile);
+          outputDiv.innerText = "Image loaded. Click Submit to proceed.";
+          outputDiv.style.display = "";
+        });
       };
       reader.readAsDataURL(file);
-
-      outputDiv.innerText = "Image loaded. Click Submit to proceed.";
-      outputDiv.style.display = "";
     });
 }
+
 
 // --- Startup: Set up Example Image Clicks ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -176,19 +179,60 @@ fileInput.addEventListener("change", () => {
   hideExampleImages();
   const file = fileInput.files[0];
   if (file) {
-    uploadedImage = file;
-    const reader = new FileReader();
-    reader.onload = e => {
-      uploadedPreview.src = e.target.result;
-      uploadedPreview.style.display = "block";
-      fileInput.style.display = "none"; // hide after selection
-      showSections('uploaded-preview', 'submit-container', 'upload-section');
-    };
-    reader.readAsDataURL(file);
-    outputDiv.innerText = "Image loaded. Click Submit to proceed.";
-    outputDiv.style.display = "";
+    // Resize if needed before using
+    resizeImage(file, (finalFile) => {
+      uploadedImage = finalFile;
+      const reader = new FileReader();
+      reader.onload = e => {
+        uploadedPreview.src = e.target.result;
+        uploadedPreview.style.display = "block";
+        fileInput.style.display = "none";
+        showSections('uploaded-preview', 'submit-container', 'upload-section');
+      };
+      reader.readAsDataURL(finalFile);
+      outputDiv.innerText = "Image loaded. Click Submit to proceed.";
+      outputDiv.style.display = "";
+    });
   }
 });
+
+
+function resizeImage(fileOrImg, callback, maxDim = 2000) {
+  const img = new Image();
+  img.onload = function() {
+    let { width, height } = img;
+    if (width <= maxDim && height <= maxDim) {
+      // No resize needed; use original
+      callback(fileOrImg);
+      return;
+    }
+    // Scale down
+    let scale = Math.min(maxDim / width, maxDim / height);
+    let newWidth = Math.round(width * scale);
+    let newHeight = Math.round(height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+    // Convert canvas to blob and then to file
+    canvas.toBlob(blob => {
+      const resizedFile = new File([blob], (fileOrImg.name || "resized.jpg"), { type: "image/jpeg" });
+      callback(resizedFile);
+    }, "image/jpeg", 0.92);
+  };
+  // Works for both files and data URLs
+  if (typeof fileOrImg === "string") {
+    img.src = fileOrImg; // dataURL or path for example images
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.readAsDataURL(fileOrImg);
+  }
+}
+
 
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) return alert("Please upload an image first.");
