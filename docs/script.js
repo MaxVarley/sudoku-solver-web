@@ -42,6 +42,8 @@ const submitCornersBtn = document.getElementById("submit-corners");
 const restartContainer = document.getElementById("restart-container");
 const startOverBtn = document.getElementById("start-over-btn");
 
+document.getElementById('manual-corner-btn-container').style.display = 'none';
+
 startOverBtn.onclick = () => location.reload();
 
 // --- UI state management ---
@@ -162,7 +164,6 @@ async function handleGridDetection() {
       );
       outputDiv.innerText = "Grid detected. You can run OCR, or manually select corners if needed.";
       outputDiv.style.display = "";
-      document.getElementById('manual-corner-btn-container').style.display = '';
       currentStep = AppState.GRID_CONFIRM;
     } else {
       outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image.";
@@ -175,7 +176,6 @@ async function handleGridDetection() {
         'upload-section', 'submit-container', 'manual-corner-btn-container',
         'manual-input-btn-container', 'output'
       );
-      document.getElementById('manual-corner-btn-container').style.display = '';
       currentStep = AppState.IMAGE_UPLOAD;
     }
 
@@ -187,7 +187,6 @@ async function handleGridDetection() {
       'upload-section', 'submit-container', 'manual-corner-btn-container',
       'manual-input-btn-container', 'output'
     );
-    document.getElementById('manual-corner-btn-container').style.display = '';
     currentStep = AppState.IMAGE_UPLOAD;
   }
 }
