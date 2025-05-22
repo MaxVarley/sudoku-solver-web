@@ -46,8 +46,17 @@ const startOverBtn = document.getElementById("start-over-btn");
 const exampleImagesDiv = document.getElementById("example-images");
 const exampleImgs = document.querySelectorAll(".example-img");
 
+const introText = document.getElementById("intro-text");
+
 // Hide manual corner button initially
 document.getElementById('manual-corner-btn-container').style.display = 'none';
+
+function showIntroText() {
+  introText.style.display = "";
+}
+function hideIntroText() {
+  introText.style.display = "none";
+}
 
 // --- Example Images Show/Hide ---
 function showExampleImages() {
@@ -123,6 +132,7 @@ function renderBoard(data, tableId, editable = false) {
 
 // --- Example Image Selection ---
 function selectExampleImage(imgPath) {
+  hideIntroText();
   hideExampleImages();
 
   // Fetch the image as a Blob so we can mimic a File upload
@@ -162,6 +172,7 @@ startOverBtn.onclick = () => location.reload();
 
 // --- File Upload Handler ---
 fileInput.addEventListener("change", () => {
+  hideIntroText();
   hideExampleImages();
   const file = fileInput.files[0];
   if (file) {
@@ -290,7 +301,8 @@ function resetToUpload() {
   showOnly('upload-section', 'submit-container', 'upload');
   document.getElementById('manual-corner-btn-container').style.display = 'none';
   outputDiv.innerText = '';
-  showExampleImages(); // <-- Show example images again
+  showIntroText();
+  showExampleImages();
 }
 
 manualInputBtn.addEventListener("click", () => {
