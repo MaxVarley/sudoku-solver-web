@@ -410,14 +410,11 @@ function drawImageOnCanvas() {
   const maxDim = Math.min(450, Math.round(window.innerWidth * 0.9));
   canvas.width = maxDim;
   canvas.height = maxDim;
-
   uploadedCanvasImage.onload = drawCanvas;
   uploadedCanvasImage.src = uploadedPreview.src;
 }
 
 function drawCanvas() {
-  canvas.width = uploadedCanvasImage.width;
-  canvas.height = uploadedCanvasImage.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(uploadedCanvasImage, 0, 0, canvas.width, canvas.height);
 
@@ -438,6 +435,7 @@ function drawCanvas() {
     ctx.strokeText(["TL", "TR", "BR", "BL"][i], x + 10, y - 5);
   }
 }
+
 
 canvas.addEventListener("mousedown", e => {
   const rect = canvas.getBoundingClientRect();
@@ -462,9 +460,17 @@ canvas.addEventListener("mouseup", () => draggingIndex = null);
 canvas.addEventListener("mouseleave", () => draggingIndex = null);
 
 resetCornersBtn.addEventListener("click", () => {
-  cornerPoints = [[10, 10], [100, 10], [100, 100], [10, 100]];
+  // corners at ~10% from edges
+  const w = canvas.width, h = canvas.height;
+  cornerPoints = [
+    [0.1 * w, 0.1 * h],
+    [0.9 * w, 0.1 * h],
+    [0.9 * w, 0.9 * h],
+    [0.1 * w, 0.9 * h]
+  ];
   drawCanvas();
 });
+
 
 submitCornersBtn.addEventListener("click", async () => {
   const scaled = cornerPoints.map(([x, y]) => {
