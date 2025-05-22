@@ -120,13 +120,11 @@ fileInput.addEventListener("change", () => {
       uploadedPreview.src = e.target.result;
       uploadedPreview.style.display = "block";
       fileInput.style.display = "none"; // hide after selection
-      showSections('uploaded-preview', 'submit-container', 'upload-section', 'manual-corner-btn-container');
+      showSections('uploaded-preview', 'submit-container', 'upload-section');
     };
     reader.readAsDataURL(file);
     outputDiv.innerText = "Image loaded. Click Submit to proceed.";
     outputDiv.style.display = "";
-    // Always allow manual-corner-btn if image loaded.
-    document.getElementById('manual-corner-btn-container').style.display = '';
   }
 });
 
