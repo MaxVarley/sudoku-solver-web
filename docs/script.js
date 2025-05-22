@@ -162,12 +162,12 @@ async function handleGridDetection() {
         'warped-label', 'warped-preview', 'ocr-button-group',
         'manual-corner-btn-container', 'manual-input-btn-container', 'restart-container'
       );
-      outputDiv.innerText = "Grid detected. You can run OCR, or manually select corners if needed, or enter digits manually.";
+      outputDiv.innerText = "Grid detected. You can run OCR, or manually select corners if needed.";
       outputDiv.style.display = "";
       document.getElementById('manual-corner-btn-container').style.display = '';
       currentStep = AppState.GRID_CONFIRM;
     } else {
-      outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image, or enter digits manually.";
+      outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image.";
       outputDiv.style.display = "";
       // Show the button and upload again
       uploadedImage = null;
