@@ -1,19 +1,19 @@
+//  App State & Configuration 
 const AppState = {
   IMAGE_UPLOAD: 0,
   GRID_CONFIRM: 1,
   OCR_CONFIRM: 2,
   VISUAL_SOLVE: 3,
 };
-
 let currentStep = AppState.IMAGE_UPLOAD;
 let uploadedImage = null;
 let inputGrid = null;
 let sessionId = localStorage.getItem("sudoku_session_id") || null;
 
+//  DOM References 
 const fileInput = document.getElementById("upload");
 const submitBtn = document.getElementById("submit-btn");
 const outputDiv = document.getElementById("output");
-
 const warpedLabel = document.getElementById("warped-label");
 const warpedPreview = document.getElementById("warped-preview");
 const uploadedPreview = document.getElementById("uploaded-preview");
@@ -42,31 +42,33 @@ const submitCornersBtn = document.getElementById("submit-corners");
 const restartContainer = document.getElementById("restart-container");
 const startOverBtn = document.getElementById("start-over-btn");
 
-// Example Images
+// Example Images & Intro Text
 const exampleImagesDiv = document.getElementById("example-images");
 const exampleImgs = document.querySelectorAll(".example-img");
-
 const introText = document.getElementById("intro-text");
 
-// Hide manual corner button initially
-document.getElementById('manual-corner-btn-container').style.display = 'none';
+// Manual Corners State
+let cornerPoints = [
+  [0.1, 0.1], // Top left
+  [0.9, 0.1], // Top right
+  [0.9, 0.9], // Bottom right
+  [0.1, 0.9]  // Bottom left
+];
+let draggingIndex = null;
+let uploadedCanvasImage = new Image();
 
-function showIntroText() {
-  introText.style.display = "";
-}
-function hideIntroText() {
-  introText.style.display = "none";
-}
 
-// --- Example Images Show/Hide ---
-function showExampleImages() {
-  exampleImagesDiv.style.display = "flex";
-}
-function hideExampleImages() {
-  exampleImagesDiv.style.display = "none";
-}
+//  UI Utility Functions 
 
-// --- UI State Management ---
+// Show/hide intro text
+function showIntroText() { introText.style.display = ""; }
+function hideIntroText() { introText.style.display = "none"; }
+
+// Show/hide example images
+function showExampleImages() { exampleImagesDiv.style.display = "flex"; }
+function hideExampleImages() { exampleImagesDiv.style.display = "none"; }
+
+// Show/hide logical UI sections
 function showSections(...idsToShow) {
   const allIds = [
     'upload-section', 'uploaded-preview', 'submit-container',
@@ -74,8 +76,7 @@ function showSections(...idsToShow) {
     'ocr-label', 'input-board', 'ocr-confirm-section',
     'manual-corner-section', 'grid-confirm-section',
     'ocr-prompt', 'solved-board', 'solved-label',
-    'manual-corner-btn-container',
-    'output'
+    'manual-corner-btn-container', 'output'
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -83,7 +84,6 @@ function showSections(...idsToShow) {
   });
   document.getElementById('start-over-btn').style.display = idsToShow.includes('upload-section') ? 'none' : '';
 }
-
 function showOnly(...idsToShow) {
   const allIds = [
     'upload-section', 'uploaded-preview', 'submit-container',
@@ -100,15 +100,14 @@ function showOnly(...idsToShow) {
   document.getElementById('start-over-btn').style.display = idsToShow.includes('upload-section') ? 'none' : '';
 }
 
+// Render the Sudoku board (optionally editable)
 function renderBoard(data, tableId, editable = false) {
   const table = document.getElementById(tableId);
   table.innerHTML = '';
-
   for (let row = 0; row < 9; row++) {
     const tr = document.createElement('tr');
     for (let col = 0; col < 9; col++) {
       const td = document.createElement('td');
-
       if (editable) {
         const input = document.createElement('input');
         input.type = 'text';
@@ -123,14 +122,126 @@ function renderBoard(data, tableId, editable = false) {
       } else {
         td.textContent = data[row][col] === 0 ? '' : data[row][col];
       }
-
       tr.appendChild(td);
     }
     table.appendChild(tr);
   }
 }
 
-// --- Example Image Selection ---
+// Resize an image if it's larger than maxDim
+function resizeImage(fileOrImg, callback, maxDim = 2000) {
+  const img = new Image();
+  img.onload = function() {
+    let { width, height } = img;
+    if (width <= maxDim && height <= maxDim) {
+      callback(fileOrImg);
+      return;
+    }
+    let scale = Math.min(maxDim / width, maxDim / height);
+    let newWidth = Math.round(width * scale);
+    let newHeight = Math.round(height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+    canvas.toBlob(blob => {
+      const resizedFile = new File([blob], (fileOrImg.name || "resized.jpg"), { type: "image/jpeg" });
+      callback(resizedFile);
+    }, "image/jpeg", 0.92);
+  };
+  if (typeof fileOrImg === "string") {
+    img.src = fileOrImg;
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.readAsDataURL(fileOrImg);
+  }
+}
+
+// --- Manual Corners: Canvas Drawing & Dragging ---
+
+// Get mouse/touch coords in canvas units
+function getCanvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  let clientX, clientY;
+  if (e.touches && e.touches.length) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  return [
+    (clientX - rect.left) / rect.width * canvas.width,
+    (clientY - rect.top) / rect.height * canvas.height
+  ];
+}
+
+// Draw the image and corners on the canvas
+function drawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(uploadedCanvasImage, 0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "red";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cornerPoints[0][0] * canvas.width, cornerPoints[0][1] * canvas.height);
+  for (let i = 1; i < 4; i++)
+    ctx.lineTo(cornerPoints[i][0] * canvas.width, cornerPoints[i][1] * canvas.height);
+  ctx.closePath();
+  ctx.stroke();
+
+  for (let i = 0; i < 4; i++) {
+    const x = cornerPoints[i][0] * canvas.width;
+    const y = cornerPoints[i][1] * canvas.height;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = "red";
+    ctx.fill();
+    ctx.strokeText(["TL", "TR", "BR", "BL"][i], x + 10, y - 5);
+  }
+}
+
+// Set up canvas size and image for manual corner selection
+function drawImageOnCanvas() {
+  const maxDim = Math.min(450, Math.round(window.innerWidth * 0.9));
+  canvas.width = maxDim;
+  canvas.height = maxDim;
+  uploadedCanvasImage.onload = drawCanvas;
+  uploadedCanvasImage.src = uploadedPreview.src;
+}
+
+// Drag logic for manual corners
+function startDrag(e) {
+  const [x, y] = getCanvasCoords(e);
+  for (let i = 0; i < 4; i++) {
+    const cx = cornerPoints[i][0] * canvas.width;
+    const cy = cornerPoints[i][1] * canvas.height;
+    if (Math.hypot(cx - x, cy - y) < 18) {
+      draggingIndex = i;
+      e.preventDefault();
+      break;
+    }
+  }
+}
+function drag(e) {
+  if (draggingIndex === null) return;
+  const [x, y] = getCanvasCoords(e);
+  cornerPoints[draggingIndex] = [
+    Math.max(0, Math.min(1, x / canvas.width)),
+    Math.max(0, Math.min(1, y / canvas.height))
+  ];
+  drawCanvas();
+  e.preventDefault();
+}
+function stopDrag(e) { draggingIndex = null; }
+
+// --- Main Event Handlers & User Actions ---
+
+// Example Image Selection
 function selectExampleImage(imgPath) {
   hideIntroText();
   hideExampleImages();
@@ -142,7 +253,6 @@ function selectExampleImage(imgPath) {
       reader.onload = e => {
         resizeImage(e.target.result, (finalFile) => {
           uploadedImage = finalFile;
-          // Preview
           const previewReader = new FileReader();
           previewReader.onload = ev => {
             uploadedPreview.src = ev.target.result;
@@ -159,27 +269,12 @@ function selectExampleImage(imgPath) {
     });
 }
 
-
-// --- Startup: Set up Example Image Clicks ---
-document.addEventListener("DOMContentLoaded", () => {
-  showExampleImages();
-  exampleImgs.forEach(img => {
-    img.addEventListener("click", () => {
-      selectExampleImage(img.dataset.path);
-    });
-  });
-});
-
-// --- Start Over Button ---
-startOverBtn.onclick = () => location.reload();
-
-// --- File Upload Handler ---
+// Handle file upload (resize if needed)
 fileInput.addEventListener("change", () => {
   hideIntroText();
   hideExampleImages();
   const file = fileInput.files[0];
   if (file) {
-    // Resize if needed before using
     resizeImage(file, (finalFile) => {
       uploadedImage = finalFile;
       const reader = new FileReader();
@@ -196,44 +291,7 @@ fileInput.addEventListener("change", () => {
   }
 });
 
-
-function resizeImage(fileOrImg, callback, maxDim = 2000) {
-  const img = new Image();
-  img.onload = function() {
-    let { width, height } = img;
-    if (width <= maxDim && height <= maxDim) {
-      // No resize needed; use original
-      callback(fileOrImg);
-      return;
-    }
-    // Scale down
-    let scale = Math.min(maxDim / width, maxDim / height);
-    let newWidth = Math.round(width * scale);
-    let newHeight = Math.round(height * scale);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = newWidth;
-    canvas.height = newHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, newWidth, newHeight);
-
-    // Convert canvas to blob and then to file
-    canvas.toBlob(blob => {
-      const resizedFile = new File([blob], (fileOrImg.name || "resized.jpg"), { type: "image/jpeg" });
-      callback(resizedFile);
-    }, "image/jpeg", 0.92);
-  };
-  // Works for both files and data URLs
-  if (typeof fileOrImg === "string") {
-    img.src = fileOrImg; // dataURL or path for example images
-  } else {
-    const reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; };
-    reader.readAsDataURL(fileOrImg);
-  }
-}
-
-
+// Submit/Next-Step Button
 submitBtn.addEventListener("click", async () => {
   if (!uploadedImage) return alert("Please upload an image first.");
   switch (currentStep) {
@@ -243,14 +301,14 @@ submitBtn.addEventListener("click", async () => {
   }
 });
 
+// Sudoku Flow Logic: Detection, OCR, Solve
+
 async function handleGridDetection() {
   const formData = new FormData();
   formData.append("image", uploadedImage);
-
   try {
     const uploadRes = await fetch("/upload", { method: "POST", body: formData });
     const uploadResult = await uploadRes.json();
-
     sessionId = uploadResult.session_id;
     localStorage.setItem("sudoku_session_id", sessionId);
 
@@ -272,7 +330,6 @@ async function handleGridDetection() {
     } else {
       outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image.";
       outputDiv.style.display = "";
-      // Show the button and upload again
       uploadedImage = null;
       fileInput.value = '';
       fileInput.style.display = '';
@@ -282,11 +339,9 @@ async function handleGridDetection() {
       );
       currentStep = AppState.IMAGE_UPLOAD;
     }
-
   } catch (err) {
     outputDiv.innerText = "Error during grid detection. You can try setting corners or entering digits manually.";
     outputDiv.style.display = "";
-    // Show manual option anyway, for resilience
     showSections(
       'upload-section', 'submit-container', 'manual-corner-btn-container',
       'manual-input-btn-container', 'output'
@@ -295,19 +350,13 @@ async function handleGridDetection() {
   }
 }
 
-ocrBtn.addEventListener("click", async () => {
-  await handleOCR();
-});
-
 async function handleOCR() {
   const formData = new FormData();
   formData.append("session_id", sessionId);
   document.getElementById('reading-msg').classList.remove('hidden');
-
   try {
     const ocrRes = await fetch("/ocr", { method: "POST", body: formData });
     const result = await ocrRes.json();
-
     if (result.input) {
       inputGrid = result.input;
       renderBoard(inputGrid, "input-board", true);
@@ -318,41 +367,10 @@ async function handleOCR() {
     } else {
       outputDiv.innerText = "OCR failed.";
     }
-
   } catch (err) {
     outputDiv.innerText = "Error during OCR.";
   }
 }
-
-confirmOCRBtn.addEventListener("click", () => {
-  showOnly();
-  currentStep = AppState.VISUAL_SOLVE;
-  handleSolveVisual(inputGrid);
-});
-
-retryGridBtn.addEventListener("click", resetToUpload);
-retryOCRBtn.addEventListener("click", resetToUpload);
-
-function resetToUpload() {
-  uploadedImage = null;
-  sessionId = null;
-  fileInput.value = '';
-  uploadedPreview.src = '';
-  warpedPreview.src = '';
-  inputBoard.innerHTML = '';
-  solvedBoard.innerHTML = '';
-  fileInput.style.display = '';
-  showOnly('upload-section', 'submit-container', 'upload');
-  document.getElementById('manual-corner-btn-container').style.display = 'none';
-  outputDiv.innerText = '';
-  showIntroText();
-  showExampleImages();
-}
-
-manualInputBtn.addEventListener("click", () => {
-  renderBoard(inputGrid, "input-board", true);
-  outputDiv.innerText = "Edit the grid manually, then press Solve.";
-});
 
 async function handleSolveVisual(grid) {
   const res = await fetch("/solve", {
@@ -388,101 +406,50 @@ async function handleSolveVisual(grid) {
   }
 }
 
-// Manual Corners
-let cornerPoints = [[50, 50], [400, 50], [400, 400], [50, 400]];
-let draggingIndex = null;
-let uploadedCanvasImage = new Image();
-
-manualCornerBtn.addEventListener("click", () => {
-  showSections('manual-corner-section', 'restart-container');
-  outputDiv.innerText = "Drag the red circles to mark the Sudoku corners. Click Submit when done.";
-  outputDiv.style.display = "";
-  drawImageOnCanvas();
-});
-
-manualFromConfirmBtn.addEventListener("click", () => {
-  showOnly('manual-corner-section');
-  drawImageOnCanvas();
-});
-
-function drawImageOnCanvas() {
-  // Set canvas size based on device width
-  const maxDim = Math.min(450, Math.round(window.innerWidth * 0.9));
-  canvas.width = maxDim;
-  canvas.height = maxDim;
-  uploadedCanvasImage.onload = drawCanvas;
-  uploadedCanvasImage.src = uploadedPreview.src;
+// Reset/cancel actions
+function resetToUpload() {
+  uploadedImage = null;
+  sessionId = null;
+  fileInput.value = '';
+  uploadedPreview.src = '';
+  warpedPreview.src = '';
+  inputBoard.innerHTML = '';
+  solvedBoard.innerHTML = '';
+  fileInput.style.display = '';
+  showOnly('upload-section', 'submit-container', 'upload');
+  document.getElementById('manual-corner-btn-container').style.display = 'none';
+  outputDiv.innerText = '';
+  showIntroText();
+  showExampleImages();
 }
 
-function drawCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(uploadedCanvasImage, 0, 0, canvas.width, canvas.height);
+//  Manual Corners Event Bindings 
+canvas.addEventListener("mousedown", startDrag);
+canvas.addEventListener("mousemove", drag);
+canvas.addEventListener("mouseup", stopDrag);
+canvas.addEventListener("mouseleave", stopDrag);
+canvas.addEventListener("touchstart", startDrag, {passive: false});
+canvas.addEventListener("touchmove", drag, {passive: false});
+canvas.addEventListener("touchend", stopDrag, {passive: false});
 
-  ctx.strokeStyle = "red";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(...cornerPoints[0]);
-  for (let i = 1; i < 4; i++) ctx.lineTo(...cornerPoints[i]);
-  ctx.closePath();
-  ctx.stroke();
-
-  for (let i = 0; i < 4; i++) {
-    const [x, y] = cornerPoints[i];
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, 2 * Math.PI);
-    ctx.fillStyle = "red";
-    ctx.fill();
-    ctx.strokeText(["TL", "TR", "BR", "BL"][i], x + 10, y - 5);
-  }
-}
-
-
-canvas.addEventListener("mousedown", e => {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
-  for (let i = 0; i < 4; i++) {
-    const [cx, cy] = cornerPoints[i];
-    if (Math.hypot(cx - x, cy - y) < 12) {
-      draggingIndex = i;
-      return;
-    }
-  }
-});
-
-canvas.addEventListener("mousemove", e => {
-  if (draggingIndex === null) return;
-  const rect = canvas.getBoundingClientRect();
-  cornerPoints[draggingIndex] = [e.clientX - rect.left, e.clientY - rect.top];
-  drawCanvas();
-});
-
-canvas.addEventListener("mouseup", () => draggingIndex = null);
-canvas.addEventListener("mouseleave", () => draggingIndex = null);
-
+// Reset and submit for corners
 resetCornersBtn.addEventListener("click", () => {
-  // corners at ~10% from edges
-  const w = canvas.width, h = canvas.height;
   cornerPoints = [
-    [0.1 * w, 0.1 * h],
-    [0.9 * w, 0.1 * h],
-    [0.9 * w, 0.9 * h],
-    [0.1 * w, 0.9 * h]
+    [0.1, 0.1],
+    [0.9, 0.1],
+    [0.9, 0.9],
+    [0.1, 0.9]
   ];
   drawCanvas();
 });
-
-
 submitCornersBtn.addEventListener("click", async () => {
-  const scaled = cornerPoints.map(([x, y]) => {
-    const sx = uploadedCanvasImage.naturalWidth / canvas.width;
-    const sy = uploadedCanvasImage.naturalHeight / canvas.height;
-    return [x * sx, y * sy];
-  });
-
+  const scaled = cornerPoints.map(([rx, ry]) => [
+    rx * uploadedCanvasImage.naturalWidth,
+    ry * uploadedCanvasImage.naturalHeight
+  ]);
   const formData = new FormData();
   formData.append("session_id", sessionId);
   formData.append("corners", JSON.stringify(scaled));
-
   try {
     const response = await fetch("/manual_warp", { method: "POST", body: formData });
     const result = await response.json();
@@ -498,4 +465,42 @@ submitCornersBtn.addEventListener("click", async () => {
   } catch (err) {
     outputDiv.innerText = "Error sending manual corners.";
   }
+});
+
+//  Other UI Event Bindings 
+document.getElementById('manual-corner-btn-container').style.display = 'none';
+
+manualCornerBtn.addEventListener("click", () => {
+  showSections('manual-corner-section', 'restart-container');
+  outputDiv.innerText = "Drag the red circles to mark the Sudoku corners. Click Submit when done.";
+  outputDiv.style.display = "";
+  drawImageOnCanvas();
+});
+manualFromConfirmBtn.addEventListener("click", () => {
+  showOnly('manual-corner-section');
+  drawImageOnCanvas();
+});
+manualInputBtn.addEventListener("click", () => {
+  renderBoard(inputGrid, "input-board", true);
+  outputDiv.innerText = "Edit the grid manually, then press Solve.";
+});
+retryGridBtn.addEventListener("click", resetToUpload);
+retryOCRBtn.addEventListener("click", resetToUpload);
+startOverBtn.onclick = () => location.reload();
+
+ocrBtn.addEventListener("click", async () => { await handleOCR(); });
+confirmOCRBtn.addEventListener("click", () => {
+  showOnly();
+  currentStep = AppState.VISUAL_SOLVE;
+  handleSolveVisual(inputGrid);
+});
+
+// Example Images (initial setup)
+document.addEventListener("DOMContentLoaded", () => {
+  showExampleImages();
+  exampleImgs.forEach(img => {
+    img.addEventListener("click", () => {
+      selectExampleImage(img.dataset.path);
+    });
+  });
 });
