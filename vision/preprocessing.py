@@ -7,11 +7,11 @@ from skimage.segmentation import clear_border
 def preprocess_image(path):
     image = cv2.imread(path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (9, 9), 3) # Apply Gaussian blur to reduce noise (can be adjusted)
+    blur = cv2.GaussianBlur(gray, (7, 7), 3) # Apply Gaussian blur to reduce noise (can be adjusted)
     # Apply adaptive thresholding to create a binary image, inverts for better contour detection
     thresh = cv2.adaptiveThreshold( 
         blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV, 9, 3
+        cv2.THRESH_BINARY_INV, 11, 2
     )
     return image, thresh
 

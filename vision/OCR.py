@@ -15,7 +15,7 @@ def get_model():
     return _model
 
 
-def is_blank(cell_img, area_thresh=0.01, margin=0.1):
+def is_blank(cell_img, area_thresh=0.02, margin=0):
     if not isinstance(cell_img, np.ndarray):
         return True
 
@@ -25,9 +25,8 @@ def is_blank(cell_img, area_thresh=0.01, margin=0.1):
     h, w = gray.shape
     cropped = gray[int(h * margin):int(h * (1 - margin)), int(w * margin):int(w * (1 - margin))]
 
-    # Invert and threshold
-    inverted = cv2.bitwise_not(cropped)
-    thresh = cv2.threshold(inverted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    # threshold
+    thresh = cv2.threshold(cropped, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
     thresh_cleared = clear_border(thresh)
 
@@ -36,22 +35,11 @@ def is_blank(cell_img, area_thresh=0.01, margin=0.1):
     if len(contours) == 0:
         return True
 
-    h_thresh, w_thresh = thresh_cleared.shape
-    valid_contours = []
-
-    for cnt in contours:
-        x, y, w_cnt, h_cnt = cv2.boundingRect(cnt)
-        if x <= 5 or y <= 5 or x + w_cnt >= w_thresh - 5 or y + h_cnt >= h_thresh - 5:
-            continue  # Skip edge-touching contours
-        valid_contours.append(cnt)
-
-    if len(valid_contours) == 0:
-        return True
-
     # Take largest valid contour
-    cnt = max(valid_contours, key=cv2.contourArea)
+    cnt = max(contours, key=cv2.contourArea)
     mask = np.zeros(thresh_cleared.shape, dtype='uint8')
     cv2.drawContours(mask, [cnt], -1, 255, -1)
+
     percent_filled = cv2.countNonZero(mask) / float(mask.size)
 
     return percent_filled < area_thresh
