@@ -53,7 +53,7 @@ function showSections(...idsToShow) {
     'ocr-label', 'input-board', 'ocr-confirm-section',
     'manual-corner-section', 'grid-confirm-section',
     'ocr-prompt', 'solved-board', 'solved-label',
-    'manual-corner-btn', 'output'
+    'manual-corner-btn-container', 'output'
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -120,13 +120,13 @@ fileInput.addEventListener("change", () => {
       uploadedPreview.src = e.target.result;
       uploadedPreview.style.display = "block";
       fileInput.style.display = "none"; // hide after selection
-      showSections('uploaded-preview', 'submit-container', 'upload-section', 'manual-corner-btn');
+      showSections('uploaded-preview', 'submit-container', 'upload-section', 'manual-corner-btn-container');
     };
     reader.readAsDataURL(file);
     outputDiv.innerText = "Image loaded. Click Submit to proceed.";
     outputDiv.style.display = "";
     // Always allow manual-corner-btn if image loaded.
-    document.getElementById('manual-corner-btn').style.display = '';
+    document.getElementById('manual-corner-btn-container').style.display = '';
   }
 });
 
@@ -158,32 +158,42 @@ async function handleGridDetection() {
 
     if (detectResult.warped_url) {
       warpedPreview.src = detectResult.warped_url + "?" + Date.now();
-      showSections('warped-label', 'warped-preview', 'ocr-button-group', 'manual-corner-btn', 'restart-container');
-      outputDiv.innerText = "Grid detected. You can run OCR, or manually select corners if needed.";
+      showSections(
+        'warped-label', 'warped-preview', 'ocr-button-group',
+        'manual-corner-btn-container', 'manual-input-btn-container', 'restart-container'
+      );
+      outputDiv.innerText = "Grid detected. You can run OCR, or manually select corners if needed, or enter digits manually.";
       outputDiv.style.display = "";
-      document.getElementById('manual-corner-btn').style.display = '';
+      document.getElementById('manual-corner-btn-container').style.display = '';
       currentStep = AppState.GRID_CONFIRM;
     } else {
-      outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image.";
+      outputDiv.innerText = "Grid not found. Try setting corners manually, or upload a new image, or enter digits manually.";
       outputDiv.style.display = "";
       // Show the button and upload again
       uploadedImage = null;
       fileInput.value = '';
       fileInput.style.display = '';
-      showSections('upload-section', 'submit-container', 'manual-corner-btn', 'output');
-      document.getElementById('manual-corner-btn').style.display = '';
+      showSections(
+        'upload-section', 'submit-container', 'manual-corner-btn-container',
+        'manual-input-btn-container', 'output'
+      );
+      document.getElementById('manual-corner-btn-container').style.display = '';
       currentStep = AppState.IMAGE_UPLOAD;
     }
 
   } catch (err) {
-    outputDiv.innerText = "Error during grid detection.";
+    outputDiv.innerText = "Error during grid detection. You can try setting corners or entering digits manually.";
     outputDiv.style.display = "";
     // Show manual option anyway, for resilience
-    showSections('upload-section', 'submit-container', 'manual-corner-btn', 'output');
-    document.getElementById('manual-corner-btn').style.display = '';
+    showSections(
+      'upload-section', 'submit-container', 'manual-corner-btn-container',
+      'manual-input-btn-container', 'output'
+    );
+    document.getElementById('manual-corner-btn-container').style.display = '';
     currentStep = AppState.IMAGE_UPLOAD;
   }
 }
+
 
 
 ocrBtn.addEventListener("click", async () => {

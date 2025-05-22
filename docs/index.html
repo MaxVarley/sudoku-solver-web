@@ -211,17 +211,21 @@
   <h1>Sudoku Solver</h1>
   <div id="output" class="grid-title" style="display:none;"></div>
 
-  <!-- Upload Section -->
-  <div id="upload-section" class="card fade-in">
-    <input type="file" id="upload" accept="image/*"><br>
-    <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
-    <div id="submit-container">
-      <button id="submit-btn" class="main-button">Submit</button>
-    </div>
-    <div id="manual-corner-btn-container" style="text-align:center; margin-top:1em;">
-      <button id="manual-corner-btn" class="main-button" style="display:none;">Enter Corners Manually</button>
-    </div>
+ <!-- Upload Section -->
+<div id="upload-section" class="card fade-in">
+  <input type="file" id="upload" accept="image/*"><br>
+  <img id="uploaded-preview" src="" alt="Uploaded Image Preview" style="display:none;"><br>
+  <div id="submit-container">
+    <button id="submit-btn" class="main-button">Submit</button>
   </div>
+  <div id="manual-input-btn-container" style="text-align:center; margin-top:1em;">
+    <button id="manual-input-btn" class="main-button" style="display:none;">Manual Input</button>
+  </div>
+</div>
+
+<div id="manual-corner-btn-container" style="text-align:center; margin-top:1em;">
+  <button id="manual-corner-btn" class="main-button" style="display:none;">Enter Corners Manually</button>
+</div>
 
   <!-- Grid Detection Result -->
   <div class="grid-title" id="warped-label" style="display:none;">Detected Sudoku Grid</div>
@@ -254,7 +258,7 @@
       <button id="submit-corners" class="main-button">Submit Corners</button>
     </div>
   </div>
-  
+
   <!-- Grid Confirmation -->
   <div id="grid-confirm-section" class="button-group" style="display:none;">
     <p>Was the grid detected correctly?</p>
