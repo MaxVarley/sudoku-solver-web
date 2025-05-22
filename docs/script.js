@@ -211,9 +211,11 @@ async function handleOCR() {
       showOnly('warped-label', 'warped-preview', 'ocr-label', 'input-board', 'ocr-confirm-section', 'ocr-prompt');
       document.getElementById("reading-msg").classList.add("hidden");
       currentStep = AppState.OCR_CONFIRM;
+      document.getElementById('manual-corner-btn-container').style.display = 'none'; // <--- ADD THIS HERE
     } else {
       outputDiv.innerText = "OCR failed.";
     }
+
   } catch (err) {
     outputDiv.innerText = "Error during OCR.";
   }
@@ -375,6 +377,7 @@ submitCornersBtn.addEventListener("click", async () => {
       showOnly('warped-label', 'warped-preview', 'ocr-button-group');
       outputDiv.innerText = "Warp successful. Please proceed with OCR.";
       currentStep = AppState.GRID_CONFIRM;
+      document.getElementById('manual-corner-btn-container').style.display = ''; // <--- ADD THIS HERE
     } else {
       outputDiv.innerText = "Manual warp failed.";
     }
