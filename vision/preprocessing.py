@@ -5,6 +5,11 @@ from scipy import ndimage
 from skimage.segmentation import clear_border
 
 def preprocess_image(path):
+    """
+    Preprocess the image for grid detection.
+    This includes reading the image, converting to grayscale,
+    applying Gaussian blur, and adaptive thresholding.
+    """
     image = cv2.imread(path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (7, 7), 3) # Apply Gaussian blur to reduce noise (can be adjusted)
@@ -16,6 +21,12 @@ def preprocess_image(path):
     return image, thresh
 
 def preprocess_for_model(cell_img, debug_path=None, margin=0.08):
+    """
+    Preprocess the cell image for digit recognition.
+    This includes resizing, centering, and normalizing the image, as well as
+    converting it to a format suitable for the model.
+    The image is expected to be a 28x28 grayscale image.
+    """
     if len(cell_img.shape) == 3:
         gray = cv2.cvtColor(cell_img, cv2.COLOR_BGR2GRAY)
     else:
@@ -65,7 +76,10 @@ def preprocess_for_model(cell_img, debug_path=None, margin=0.08):
     return img_array
 
 def split_cells(warped_img):
-
+    """
+    Split the warped image into 9x9 cells.
+    Each cell is expected to be a square of equal size.
+    """
     grid = []
     h, w = warped_img.shape[:2]
     cell_h = h // 9

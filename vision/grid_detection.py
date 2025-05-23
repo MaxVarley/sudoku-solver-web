@@ -14,6 +14,7 @@ def find_sudoku_contour(thresh_img, min_area=1000, aspect_ratio_tol=0.05):
         if area < min_area:
             continue
 
+        # Approximate the contour to a polygon
         approx = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
 
         if len(approx) != 4:
@@ -44,6 +45,7 @@ def get_perspective_transform(image, contour):
     pts = contour.reshape(4, 2).astype("float32")
     rect = order_points(pts)
 
+    # Calculate the width and height of the new image
     side = max(
         np.linalg.norm(rect[0] - rect[1]),
         np.linalg.norm(rect[1] - rect[2]),
@@ -63,7 +65,6 @@ def get_perspective_transform(image, contour):
 
     return warped, rect  # return both warped image and ordered points
 
-
 def warp_from_corners(image, corners):
     """
     Warp the original image using manually provided corners (TL, TR, BR, BL).
@@ -72,6 +73,7 @@ def warp_from_corners(image, corners):
     if rect.shape != (4, 2):
         raise ValueError("Corners must be a list or array of shape (4, 2)")
 
+    # Calculate the width and height of the new image
     side = max(
         np.linalg.norm(rect[0] - rect[1]),
         np.linalg.norm(rect[1] - rect[2]),

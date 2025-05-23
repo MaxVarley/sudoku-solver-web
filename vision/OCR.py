@@ -16,6 +16,10 @@ def get_model():
 
 
 def is_blank(cell_img, area_thresh=0.02, margin=0):
+    """
+    Check if the cell is blank or has too little content.
+    Returns True if the cell is blank or has too little content.
+    """
     if not isinstance(cell_img, np.ndarray):
         return True
 
@@ -25,9 +29,11 @@ def is_blank(cell_img, area_thresh=0.02, margin=0):
     h, w = gray.shape
     cropped = gray[int(h * margin):int(h * (1 - margin)), int(w * margin):int(w * (1 - margin))]
 
-    # threshold
+    # thresholding using Otsu's method
     thresh = cv2.threshold(cropped, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
+    # Clear features touching the border
+    # This really helps to avoid false positives on the edges
     thresh_cleared = clear_border(thresh)
 
     # Find contours
@@ -47,6 +53,11 @@ def is_blank(cell_img, area_thresh=0.02, margin=0):
 
 
 def recognize_cells(cell_imgs):
+    """
+    Recognize digits in the given cell images using a pre-trained model.
+    Each cell image is expected to be a 28x28 grayscale image.
+    Returns a 2D list of recognized digits.
+    """
     board = []
     for row_idx, row in enumerate(cell_imgs):
         board_row = []
@@ -54,6 +65,7 @@ def recognize_cells(cell_imgs):
             digit = 0
             try:
                 if not is_blank(cell):
+                    # Need to preprocess the image to match the model input
                     input_tensor = preprocess_for_model(cell)
                     prediction = get_model().predict(input_tensor, verbose=0)
                     digit = int(np.argmax(prediction))
