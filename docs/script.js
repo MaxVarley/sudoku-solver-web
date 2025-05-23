@@ -428,12 +428,50 @@ resetCornersBtn.addEventListener("click", () => {
   cornerPoints = [[0.1,0.1],[0.9,0.1],[0.9,0.9],[0.1,0.9]];
   drawCanvas();
 });
-submitCornersBtn.addEventListener("click", async () => { /* ... */ });
+submitCornersBtn.addEventListener("click", async () => {
+  const scaled = cornerPoints.map(([rx, ry]) => [
+    rx * uploadedCanvasImage.naturalWidth,
+    ry * uploadedCanvasImage.naturalHeight
+  ]);
+  const formData = new FormData();
+  formData.append("session_id", sessionId);
+  formData.append("corners", JSON.stringify(scaled));
+  try {
+    const response = await fetch("/manual_warp", { method: "POST", body: formData });
+    const result = await response.json();
+    if (result.warped_url) {
+      warpedPreview.src = result.warped_url + "?" + Date.now();
+      showOnly('warped-label', 'warped-preview', 'ocr-button-group');
+      outputDiv.innerText = "Warp successful. Please proceed with OCR.";
+      currentStep = AppState.GRID_CONFIRM;
+      document.getElementById('manual-corner-btn-container').style.display = '';
+    } else {
+      outputDiv.innerText = "Manual warp failed.";
+    }
+  } catch (err) {
+    outputDiv.innerText = "Error sending manual corners.";
+  }
+});
+
 
 document.getElementById('manual-corner-btn-container').style.display = 'none';
-manualCornerBtn.addEventListener("click", () => { /* ... */ });
-manualFromConfirmBtn.addEventListener("click", () => { /* ... */ });
-manualInputBtn.addEventListener("click", () => { /* ... */ });
+manualCornerBtn.addEventListener("click", () => {
+  showSections('manual-corner-section', 'restart-container');
+  outputDiv.innerText = "Drag the red circles to mark the Sudoku corners. Click Submit when done.";
+  outputDiv.style.display = "";
+  drawImageOnCanvas();
+});
+
+manualFromConfirmBtn.addEventListener("click", () => {
+  showOnly('manual-corner-section');
+  drawImageOnCanvas();
+});
+
+manualInputBtn.addEventListener("click", () => {
+  renderBoard(inputGrid, "input-board", true);
+  outputDiv.innerText = "Edit the grid manually, then press Solve.";
+});
+
 retryGridBtn.addEventListener("click", resetToUpload);
 retryOCRBtn.addEventListener("click", resetToUpload);
 startOverBtn.onclick = () => location.reload();
